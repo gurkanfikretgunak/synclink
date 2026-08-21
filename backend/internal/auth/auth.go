@@ -15,20 +15,27 @@ import (
 var (
 	ErrInvalidCreds = errors.New("invalid credentials")
 	ErrExists       = errors.New("already exists")
+	ErrValidation   = errors.New("validation")
+	ErrDisabled     = errors.New("account disabled")
+	ErrSignupClosed = errors.New("signup closed")
 )
 
 type User struct {
 	ID           uuid.UUID `json:"id"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
+	Role         string    `json:"role"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"createdAt"`
 }
 
 type Service struct {
-	mu     sync.Mutex
-	users  map[string]*User
-	byID   map[uuid.UUID]*User
-	reset  map[string]resetEntry
-	secret []byte
+	mu       sync.Mutex
+	users    map[string]*User
+	byID     map[uuid.UUID]*User
+	reset    map[string]resetEntry
+	secret   []byte
+	settings Settings
 }
 
 func NewService() *Service {
@@ -39,7 +46,16 @@ func NewService() *Service {
 	return &Service{
 		users:  map[string]*User{},
 		byID:   map[uuid.UUID]*User{},
+		reset:  map[string]resetEntry{},
 		secret: []byte(secret),
+		settings: Settings{
+			SiteName:      "SyncLink",
+			Tagline:       "Your links, one page.",
+			About:         "SyncLink is a text-first page for people and brands.",
+			SupportEmail:  "hello@synclink.app",
+			SignupEnabled: true,
+			Maintenance:   false,
+		},
 	}
 }
 
@@ -52,6 +68,9 @@ type Claims struct {
 func (s *Service) Register(ctx context.Context, email, password string) (*User, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.settings.SignupEnabled && len(s.users) > 0 {
+		return nil, "", ErrSignupClosed
+	}
 	if _, ok := s.users[email]; ok {
 		return nil, "", ErrExists
 	}
@@ -59,7 +78,11 @@ func (s *Service) Register(ctx context.Context, email, password string) (*User, 
 	if err != nil {
 		return nil, "", err
 	}
-	u := &User{ID: uuid.New(), Email: email, PasswordHash: string(hash)}
+	role := RoleUser
+	if len(s.users) == 0 {
+		role = RoleAdmin
+	}
+	u := &User{ID: uuid.New(), Email: email, PasswordHash: string(hash), Role: role, Status: StatusActive, CreatedAt: time.Now().UTC()}
 	s.users[email] = u
 	s.byID[u.ID] = u
 	tok, err := s.token(u)
@@ -75,6 +98,9 @@ func (s *Service) Login(ctx context.Context, email, password string) (*User, str
 	}
 	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) != nil {
 		return nil, "", ErrInvalidCreds
+	}
+	if u.Status == StatusDisabled {
+		return nil, "", ErrDisabled
 	}
 	tok, err := s.token(u)
 	return u, tok, err

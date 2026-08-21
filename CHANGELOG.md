@@ -32,3 +32,8 @@ All notable changes to SyncLink live in this file.
 - Live URLs: app https://synclink-mocha.vercel.app , API https://synclink-api.onrender.com
 
 - Password: PUT /api/v1/me/password, POST /api/v1/auth/forgot-password, POST /api/v1/auth/reset-password.
+
+## [0.4.0] - 2026-08-21
+
+### Added
+- Admin API: first registered user is admin. GET/PUT /api/v1/admin/settings, users, pages, stats. Public GET /api/v1/public/settings (about, tagline, signup, maintenance).

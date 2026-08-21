@@ -12,6 +12,7 @@ type PageStore interface {
 	GetPageByID(ctx context.Context, id uuid.UUID) (*Page, error)
 	GetPageByUserID(ctx context.Context, userID uuid.UUID) (*Page, error)
 	GetPageBySlug(ctx context.Context, slug string) (*Page, error)
+	ListPages(ctx context.Context) ([]*Page, error)
 }
 
 type LinkStore interface {
@@ -27,4 +28,15 @@ type LinkStore interface {
 type Store interface {
 	PageStore
 	LinkStore
+}
+
+func (m *MemoryStore) ListPages(ctx context.Context) ([]*Page, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]*Page, 0, len(m.pages))
+	for _, p := range m.pages {
+		cp := *p
+		out = append(out, &cp)
+	}
+	return out, nil
 }

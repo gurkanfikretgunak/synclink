@@ -104,7 +104,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 	p := &Page{
 		ID: uuid.New(), UserID: userID, Slug: slug,
 		DisplayName: strings.TrimSpace(in.DisplayName),
-		Bio: strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
+		Bio:         strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
 	}
 	if err := s.store.CreatePage(ctx, p); err != nil {
 		return nil, err
@@ -234,4 +234,16 @@ func (s *Service) ReorderLinks(ctx context.Context, userID uuid.UUID, ids []uuid
 		return nil, err
 	}
 	return s.ListLinks(ctx, userID)
+}
+
+func (s *Service) ListAll(ctx context.Context) ([]PageDTO, error) {
+	pages, err := s.store.ListPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PageDTO, 0, len(pages))
+	for _, p := range pages {
+		out = append(out, ToPageDTO(p))
+	}
+	return out, nil
 }

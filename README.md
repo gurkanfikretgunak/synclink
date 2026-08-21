@@ -13,3 +13,5 @@ See CHANGELOG.md and backend/README.md.
 Dashboard: sign in or Sign up (email + password, min 8).
 v0.2.0 visual stations on /, /{slug}, /dashboard.
 v0.3.0 Fira Code, live preview, password flows.
+
+Admin API for /admin. First account is admin.

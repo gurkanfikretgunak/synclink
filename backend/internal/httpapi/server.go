@@ -41,6 +41,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 		r.Post("/auth/forgot-password", s.forgotPassword)
 		r.Post("/auth/reset-password", s.resetPassword)
 		r.Get("/public/pages/{slug}", s.publicPage)
+		r.Get("/public/settings", s.publicSettings)
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwt)
 			r.Get("/me", s.me)
@@ -52,6 +53,14 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 			r.Put("/me/page/links/reorder", s.reorder)
 			r.Patch("/me/page/links/{id}", s.updateLink)
 			r.Delete("/me/page/links/{id}", s.deleteLink)
+			r.Get("/admin/me", s.adminMe)
+			r.Get("/admin/users", s.adminUsers)
+			r.Patch("/admin/users/{id}", s.adminPatchUser)
+			r.Delete("/admin/users/{id}", s.adminDeleteUser)
+			r.Get("/admin/settings", s.adminSettings)
+			r.Put("/admin/settings", s.adminPutSettings)
+			r.Get("/admin/pages", s.adminPages)
+			r.Get("/admin/stats", s.adminStats)
 		})
 	})
 	return r
@@ -73,6 +82,12 @@ func writeErr(w http.ResponseWriter, err error) {
 		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
 	case errors.Is(err, auth.ErrWeakPassword):
 		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
+	case errors.Is(err, auth.ErrValidation):
+		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
+	case errors.Is(err, auth.ErrDisabled), errors.Is(err, auth.ErrSignupClosed):
+		writeJSON(w, 403, map[string]any{"error": "Forbidden", "message": err.Error(), "code": 403})
+	case errors.Is(err, auth.ErrForbidden):
+		writeJSON(w, 403, map[string]any{"error": "Forbidden", "message": err.Error(), "code": 403})
 	case errors.Is(err, auth.ErrInvalidCreds), errors.Is(err, page.ErrUnauthorized):
 		writeJSON(w, 401, map[string]any{"error": "Unauthorized", "message": err.Error(), "code": 401})
 	default:
@@ -120,7 +135,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
-	writeJSON(w, 201, map[string]any{"token": tok, "user": map[string]any{"id": u.ID, "email": u.Email}})
+	writeJSON(w, 201, map[string]any{"token": tok, "user": u.Info()})
 }
 
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
@@ -137,7 +152,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"token": tok, "user": map[string]any{"id": u.ID, "email": u.Email}})
+	writeJSON(w, 200, map[string]any{"token": tok, "user": u.Info()})
 }
 
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
@@ -151,7 +166,7 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 401, map[string]string{"error": "not authenticated"})
 		return
 	}
-	writeJSON(w, 200, map[string]any{"id": u.ID, "email": u.Email})
+	writeJSON(w, 200, u.Info())
 }
 
 func (s *Server) publicPage(w http.ResponseWriter, r *http.Request) {

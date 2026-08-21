@@ -16,3 +16,5 @@ Docker: docker build -t synclink-api . && docker run -p 8080:8080 -e JWT_SECRET=
 Render: ../render.yaml (rootDir backend, Frankfurt).
 
 Password: PUT /me/password, POST /auth/forgot-password, POST /auth/reset-password (demo resetToken in forgot response).
+
+Admin: first signup is admin. /admin/* JWT. Public settings: GET /api/v1/public/settings.
