@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-08-21
+
+### Changed
+- Richer UI: visual stations on home, public page, and dashboard. Cream canvas, generated stills in public/stations, shadcn Avatar on /{slug}.
 - Dashboard Sign up on `/dashboard` plus `synclink.register` (`POST /api/v1/auth/register`).
 
 ## [0.1.0] - 2026-08-21
