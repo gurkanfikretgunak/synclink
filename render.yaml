@@ -1,0 +1,16 @@
+# SyncLink API. Root of this repo, service builds from backend/.
+services:
+  - type: web
+    name: synclink-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    envVars:
+      - key: ADDR
+        value: ":8080"
+      - key: JWT_SECRET
+        generateValue: true
