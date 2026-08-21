@@ -20,6 +20,11 @@ const emptySettings: PlatformSettings = {
   supportEmail: "",
   signupEnabled: true,
   maintenance: false,
+  metaTitle: "SyncLink",
+  metaDescription: "One page. Every link.",
+  ogImage: "",
+  favicon: "",
+  themeColor: "#111111",
 };
 
 export default function AdminPage() {
@@ -247,7 +252,7 @@ export default function AdminPage() {
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Platform</CardTitle>
-              <CardDescription>About text, signup, maintenance. This is what the public site reads.</CardDescription>
+              <CardDescription>Name, about, and every head tag. The public site reads this live.</CardDescription>
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={saveSettings}>
@@ -255,6 +260,11 @@ export default function AdminPage() {
                 <div className="space-y-2"><Label htmlFor="tagline">Tagline</Label><Input id="tagline" value={settings.tagline} onChange={(e) => setSettings({ ...settings, tagline: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="about">About</Label><Textarea id="about" value={settings.about} onChange={(e) => setSettings({ ...settings, about: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="supportEmail">Support email</Label><Input id="supportEmail" type="email" value={settings.supportEmail} onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="metaTitle">Meta title</Label><Input id="metaTitle" value={settings.metaTitle} onChange={(e) => setSettings({ ...settings, metaTitle: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="metaDescription">Meta description</Label><Textarea id="metaDescription" value={settings.metaDescription} onChange={(e) => setSettings({ ...settings, metaDescription: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="ogImage">OG image URL</Label><Input id="ogImage" value={settings.ogImage} onChange={(e) => setSettings({ ...settings, ogImage: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="favicon">Favicon URL</Label><Input id="favicon" value={settings.favicon} onChange={(e) => setSettings({ ...settings, favicon: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="themeColor">Theme color</Label><Input id="themeColor" value={settings.themeColor} onChange={(e) => setSettings({ ...settings, themeColor: e.target.value })} /></div>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.signupEnabled} onChange={(e) => setSettings({ ...settings, signupEnabled: e.target.checked })} /> Signup enabled</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.maintenance} onChange={(e) => setSettings({ ...settings, maintenance: e.target.checked })} /> Maintenance</label>
                 <Button type="submit">Save settings</Button>

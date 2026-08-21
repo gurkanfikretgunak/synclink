@@ -26,6 +26,10 @@ export type Page = {
   bio: string;
   avatarUrl: string | null;
   theme: string;
+  avatarShape: string;
+  accentColor: string;
+  background: string;
+  motion: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -55,6 +59,10 @@ export type PublicPage = {
   bio: string;
   avatarUrl: string | null;
   theme: string;
+  avatarShape: string;
+  accentColor: string;
+  background: string;
+  motion: string;
   links: PublicLink[];
 };
 
@@ -64,6 +72,10 @@ export type UpsertPageInput = {
   bio: string;
   avatarUrl?: string | null;
   theme?: string;
+  avatarShape?: string;
+  accentColor?: string;
+  background?: string;
+  motion?: string;
 };
 
 export type CreateLinkInput = {
@@ -96,6 +108,11 @@ export type PlatformSettings = {
   supportEmail: string;
   signupEnabled: boolean;
   maintenance: boolean;
+  metaTitle: string;
+  metaDescription: string;
+  ogImage: string;
+  favicon: string;
+  themeColor: string;
 };
 
 export type LoginResponse = {

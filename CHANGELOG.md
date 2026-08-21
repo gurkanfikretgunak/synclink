@@ -3,6 +3,15 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.5.0] - 2026-08-21
+
+### Added
+- Page look on GET/PUT /api/v1/me/page and public GET /api/v1/public/pages/{slug}: avatarShape (circle|rounded|square), accentColor, background (cream|white|dark|motion), motion (none|subtle|lively). Defaults: circle, #111111, cream, subtle.
+- Site meta on GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings: metaTitle, metaDescription, ogImage, favicon, themeColor. Next head now reads public settings.
+- Dashboard studio: preview cards on the right, tap to open identity / look / links / account on the left.
+- Public /{slug} honors avatarShape, accentColor, background, motion. Page-enter and image hover on home, dashboard, public.
+
+
 
 ## [0.4.0] - 2026-08-21
 

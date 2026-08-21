@@ -62,7 +62,7 @@ export default function Home() {
             </Link>
           </div>
         </div>
-        <div className="overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-[0_20px_60px_-32px_rgba(0,0,0,0.35)]">
+        <div className="img-hover overflow-hidden rounded-3xl border border-neutral-200/80 bg-white shadow-[0_20px_60px_-32px_rgba(0,0,0,0.35)]">
           <Image
             src="/stations/hero.png"
             alt="SyncLink visual station"
@@ -84,7 +84,7 @@ export default function Home() {
             </CardHeader>
             {index === 1 ? (
               <CardContent>
-                <div className="overflow-hidden rounded-xl bg-[#f4f1ec]">
+                <div className="img-hover overflow-hidden rounded-xl bg-[#f4f1ec]">
                   <Image
                     src="/stations/orbit.png"
                     alt=""

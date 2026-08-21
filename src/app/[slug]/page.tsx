@@ -1,69 +1,71 @@
 import Image from "next/image";
+import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button";
 import { synclink } from "@/lib/api";
 
-type Props = { params: Promise<{ slug: string }> };
+const bgClass: Record<string, string> = {
+  cream: "bg-[#faf9f7] text-neutral-950",
+  white: "bg-white text-neutral-950",
+  dark: "bg-[#111111] text-white",
+  motion: "bg-motion text-neutral-950",
+};
 
-export default async function PublicPage({ params }: Props) {
+const shapeClass: Record<string, string> = {
+  circle: "rounded-full",
+  rounded: "rounded-2xl",
+  square: "rounded-none",
+};
+
+const motionClass: Record<string, string> = {
+  none: "transition-colors",
+  subtle: "transition-transform duration-300 hover:-translate-y-0.5",
+  lively: "link-lively transition-transform duration-300 hover:-translate-y-1 hover:scale-[1.02]",
+};
+
+export default async function PublicPage({ params }: PageProps<"/[slug]">) {
   const { slug } = await params;
-  let page = null;
-  let error = "";
+  let page;
   try {
-    page = await synclink.getPublicPage(slug);
-  } catch (err) {
-    error = err instanceof Error ? err.message : "Page not found";
+    page = await synclink.publicPage(slug);
+  } catch {
+    notFound();
   }
 
-  if (!page) {
-    return (
-      <main className="flex min-h-full flex-col items-center justify-center bg-[#faf9f7] px-6 py-16">
-        <p className="mb-6 text-xs tracking-[0.28em] text-neutral-400">SYNCLINK</p>
-        <h1 className="text-3xl font-medium tracking-tight">{slug}</h1>
-        <p className="mt-2 text-neutral-600">{error}</p>
-      </main>
-    );
-  }
-
-  const initial = (page.displayName || page.slug).slice(0, 1).toUpperCase();
+  const tone = bgClass[page.background] || bgClass.cream;
+  const shape = shapeClass[page.avatarShape] || shapeClass.circle;
+  const motion = motionClass[page.motion] || motionClass.subtle;
+  const accent = page.accentColor || "#111111";
+  const dark = page.background === "dark";
 
   return (
-    <main className="min-h-full bg-[#faf9f7]">
-      <div className="mx-auto flex w-full max-w-md flex-col items-center gap-8 px-6 py-16">
-        <p className="text-xs tracking-[0.28em] text-neutral-400">SYNCLINK</p>
-        <Avatar className="size-20 border border-neutral-200 bg-white">
-          {page.avatarUrl ? <AvatarImage src={page.avatarUrl} alt="" /> : null}
-          <AvatarFallback className="bg-white text-lg">{initial}</AvatarFallback>
+    <main className={`relative min-h-full overflow-hidden ${tone}`}>
+      <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col items-center px-6 py-16">
+        <div className="img-hover mb-8 overflow-hidden rounded-3xl">
+          <Image src="/stations/orbit.png" alt="" width={720} height={480} className="h-28 w-full object-cover opacity-90" />
+        </div>
+        <Avatar className={`size-20 border ${shape} ${dark ? "border-white/15" : "border-neutral-200"}`}>
+          {page.avatarUrl ? <AvatarImage src={page.avatarUrl} alt={page.displayName} /> : null}
+          <AvatarFallback className={dark ? "bg-white/10 text-white" : ""}>
+            {page.displayName.slice(0, 1).toUpperCase()}
+          </AvatarFallback>
         </Avatar>
-        <header className="space-y-2 text-center">
-          <h1 className="text-3xl font-medium tracking-tight">{page.displayName}</h1>
-          {page.bio ? <p className="text-neutral-600">{page.bio}</p> : null}
-        </header>
-        <ul className="w-full space-y-3">
+        <h1 className="mt-5 text-2xl font-medium tracking-tight">{page.displayName}</h1>
+        {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
+        <ul className="mt-10 w-full space-y-3">
           {page.links.map((link) => (
             <li key={link.id}>
               <a
                 href={link.url}
-                className={buttonVariants({
-                  variant: "outline",
-                  className:
-                    "h-12 w-full justify-center rounded-2xl border-neutral-200 bg-white text-base font-medium hover:bg-white",
-                })}
-                rel="noreferrer"
                 target="_blank"
+                rel="noreferrer"
+                className={`block rounded-2xl border px-4 py-4 text-center text-sm ${motion} ${dark ? "border-white/15 bg-white/5" : "border-neutral-200 bg-white"}`}
+                style={{ boxShadow: `0 0 0 1px ${accent}14` }}
               >
                 {link.title}
               </a>
             </li>
           ))}
         </ul>
-        <Image
-          src="/stations/orbit.png"
-          alt=""
-          width={80}
-          height={80}
-          className="mt-6 opacity-70"
-        />
       </div>
     </main>
   );

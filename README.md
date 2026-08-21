@@ -1,18 +1,31 @@
 # SyncLink
 
-Text-first pages. Next.js at root (Vercel) + Go API in backend/ (Render).
-Client: src/lib/api.ts. Public: /{slug}. Editor: /dashboard.
+Your links, one page. People design a public page from the dashboard. Admins drive site-wide meta from /admin.
 
-Local API: cd backend && go run ./cmd/server (http://localhost:8080/health/live)
-See CHANGELOG.md and backend/README.md.
+![Home](public/stations/hero.png)
 
-## Live
+Live app: https://synclink-mocha.vercel.app
+API: https://synclink-api.onrender.com
 
-- App: https://synclink-mocha.vercel.app
-- API: https://synclink-api.onrender.com
-Dashboard: sign in or Sign up (email + password, min 8).
-v0.2.0 visual stations on /, /{slug}, /dashboard.
-v0.3.0 Fira Code, live preview, password flows.
+Next.js at repo root (Vercel). Go API in backend/ (Render). Client: src/lib/api.ts.
 
-Admin API for /admin. First account is admin.
-v0.4.0 admin console, about, mobile sheets.
+## What it is
+
+One public URL per person (/{slug}). Circle avatar, accent color, background, and motion live on the page and show on both the editor preview and the live page.
+
+![Orbit](public/stations/orbit.png)
+
+Sign in or sign up on /dashboard. First account is admin.
+
+![Login](public/stations/login.png)
+
+Routes: / public home from settings, /{slug} live page, /about, /dashboard editor, /admin meta, /reset password.
+
+## Look and meta
+
+Page GET/PUT /api/v1/me/page and GET /api/v1/public/pages/{slug} now include avatarShape (circle|rounded|square), accentColor, background (cream|white|dark|motion), motion (none|subtle|lively). Defaults: circle, #111111, cream, subtle.
+
+Admin GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings add metaTitle, metaDescription, ogImage, favicon, themeColor. Wire Next head from public settings.
+
+Local: cd backend && go test ./... && go run ./cmd/server
+In-memory store. Render free tier sleeps and wipes data. See CHANGELOG.md and backend/README.md.
