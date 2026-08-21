@@ -1,11 +1,16 @@
 # SyncLink backend
 
-Go API for SyncLink. Lives in this repo, not masterfabric-go.
+Go API for the Next app in this repo. Not masterfabric-go.
 
-```bash
-export DATABASE_URL=postgres://postgres:postgres@localhost:5432/synclink?sslmode=disable
 export JWT_SECRET=dev-secret
+export ADDR=:8080
+go test ./...
 go run ./cmd/server
-```
 
-Listens on `:8080`.
+Health: GET http://localhost:8080/health/live
+In-memory store. JWT from /api/v1/auth/register or /login.
+
+Routes: /health/live, /api/v1/auth/register, /api/v1/auth/login, /api/v1/public/pages/{slug}, /api/v1/me, /api/v1/me/page, /api/v1/me/page/links, /api/v1/me/page/links/{id}, /api/v1/me/page/links/reorder
+
+Docker: docker build -t synclink-api . && docker run -p 8080:8080 -e JWT_SECRET=dev-secret synclink-api
+Render: ../render.yaml (rootDir backend, Frankfurt).
