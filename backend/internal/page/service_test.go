@@ -54,3 +54,55 @@ func TestLinkReorder(t *testing.T) {
 		t.Fatalf("reorder failed: %#v", out)
 	}
 }
+
+func TestEmptyGetMyPageAndListLinks(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	uid := uuid.New()
+	got, err := svc.GetMyPage(ctx, uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != uuid.Nil || got.Slug != "" || got.DisplayName != "" || got.Bio != "" {
+		t.Fatalf("expected empty page, got %#v", got)
+	}
+	if got.AvatarURL != nil {
+		t.Fatalf("avatarUrl should be null, got %#v", got.AvatarURL)
+	}
+	if got.Theme != ThemeDefault || got.AvatarShape != "circle" || got.AccentColor != "#111111" || got.Background != "cream" || got.Motion != "subtle" {
+		t.Fatalf("expected default look, got %#v", got)
+	}
+	links, err := svc.ListLinks(ctx, uid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if links == nil || len(links) != 0 {
+		t.Fatalf("expected empty slice, got %#v", links)
+	}
+}
+
+func TestSeedDemoIfEmpty(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	uid := uuid.New()
+	if err := svc.SeedDemoIfEmpty(ctx, uid); err != nil {
+		t.Fatal(err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "gurkan")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pub.DisplayName != "Gürkan" || pub.Theme != ThemeDefault || len(pub.Links) != 3 {
+		t.Fatalf("seeded page %#v", pub)
+	}
+	if err := svc.SeedDemoIfEmpty(ctx, uuid.New()); err != nil {
+		t.Fatal(err)
+	}
+	pages, err := svc.ListAll(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pages) != 1 {
+		t.Fatalf("second seed should no-op, got %d pages", len(pages))
+	}
+}

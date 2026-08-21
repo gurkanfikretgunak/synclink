@@ -3,6 +3,16 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.6.0] - 2026-08-22
+
+### Changed
+- GET /api/v1/me/page returns 200 with an empty PageDTO (nil id, empty slug) instead of 404 when the user has no page. Next treats empty slug as unsaved.
+- GET /api/v1/me/page/links returns 200 [] when the user has no page.
+
+### Added
+- In-memory seed after Render wipe: admin@synclink.app and gurkanfikretgunak@gmail.com (admins), plus a demo /gurkan page with links so the site has data at process start.
+- Home/design copy on GET /api/v1/public/settings and GET/PUT /api/v1/admin/settings: heroTitle, heroSubtitle, heroCta, heroImage, demoSlug.
+
 ## [0.5.0] - 2026-08-21
 
 ### Added

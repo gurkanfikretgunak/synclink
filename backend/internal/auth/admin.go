@@ -96,6 +96,11 @@ type Settings struct {
 	OgImage         string `json:"ogImage"`
 	Favicon         string `json:"favicon"`
 	ThemeColor      string `json:"themeColor"`
+	HeroTitle       string `json:"heroTitle"`
+	HeroSubtitle    string `json:"heroSubtitle"`
+	HeroCta         string `json:"heroCta"`
+	HeroImage       string `json:"heroImage"`
+	DemoSlug        string `json:"demoSlug"`
 }
 
 func (s *Service) Settings() Settings {
@@ -118,6 +123,11 @@ func (s *Service) PublicSettings() map[string]any {
 		"ogImage":         st.OgImage,
 		"favicon":         st.Favicon,
 		"themeColor":      st.ThemeColor,
+		"heroTitle":       st.HeroTitle,
+		"heroSubtitle":    st.HeroSubtitle,
+		"heroCta":         st.HeroCta,
+		"heroImage":       st.HeroImage,
+		"demoSlug":        st.DemoSlug,
 	}
 }
 
@@ -137,5 +147,20 @@ func (s *Service) UpdateSettings(in Settings) Settings {
 	s.settings.OgImage = strings.TrimSpace(in.OgImage)
 	s.settings.Favicon = strings.TrimSpace(in.Favicon)
 	s.settings.ThemeColor = strings.TrimSpace(in.ThemeColor)
+	if v := strings.TrimSpace(in.HeroTitle); v != "" {
+		s.settings.HeroTitle = v
+	}
+	if v := strings.TrimSpace(in.HeroSubtitle); v != "" {
+		s.settings.HeroSubtitle = v
+	}
+	if v := strings.TrimSpace(in.HeroCta); v != "" {
+		s.settings.HeroCta = v
+	}
+	if v := strings.TrimSpace(in.HeroImage); v != "" {
+		s.settings.HeroImage = v
+	}
+	if v := strings.TrimSpace(in.DemoSlug); v != "" {
+		s.settings.DemoSlug = v
+	}
 	return s.settings
 }

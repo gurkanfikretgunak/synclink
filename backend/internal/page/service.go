@@ -58,10 +58,30 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 	}, nil
 }
 
+func emptyPageDTO() PageDTO {
+	shape, accent, bg, motion := NormalizeLook("", "", "", "")
+	return PageDTO{
+		ID:          uuid.Nil,
+		Slug:        "",
+		DisplayName: "",
+		Bio:         "",
+		AvatarURL:   nil,
+		Theme:       ThemeDefault,
+		AvatarShape: shape,
+		AccentColor: accent,
+		Background:  bg,
+		Motion:      motion,
+	}
+}
+
 func (s *Service) GetMyPage(ctx context.Context, userID uuid.UUID) (*PageDTO, error) {
 	p, err := s.store.GetPageByUserID(ctx, userID)
 	if err != nil {
-		return nil, ErrNotFound
+		if isNotFound(err) {
+			dto := emptyPageDTO()
+			return &dto, nil
+		}
+		return nil, err
 	}
 	dto := ToPageDTO(p)
 	return &dto, nil
@@ -131,6 +151,9 @@ func (s *Service) requirePage(ctx context.Context, userID uuid.UUID) (*Page, err
 func (s *Service) ListLinks(ctx context.Context, userID uuid.UUID) ([]LinkDTO, error) {
 	p, err := s.requirePage(ctx, userID)
 	if err != nil {
+		if isNotFound(err) {
+			return []LinkDTO{}, nil
+		}
 		return nil, err
 	}
 	links, err := s.store.ListLinks(ctx, p.ID)

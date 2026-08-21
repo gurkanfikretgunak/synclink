@@ -58,6 +58,11 @@ func NewService() *Service {
 			MetaTitle:       "SyncLink",
 			MetaDescription: "Your links, one page.",
 			ThemeColor:      "#111111",
+			HeroTitle:       "One page. Every link.",
+			HeroSubtitle:    "A quieter public page. White space, type, and a few stills. Edit from the dashboard.",
+			HeroCta:         "Create your page",
+			HeroImage:       "/stations/hero.png",
+			DemoSlug:        "gurkan",
 		},
 	}
 }

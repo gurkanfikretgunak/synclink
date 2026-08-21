@@ -15,7 +15,7 @@ One public URL per person (/{slug}). Circle avatar, accent color, background, an
 
 ![Orbit](public/stations/orbit.png)
 
-Sign in or sign up on /dashboard. First account is admin.
+Sign in or sign up on /dashboard. After a Render wipe the API seeds admins and a demo /gurkan page. Later signups stay user.
 
 ![Login](public/stations/login.png)
 
@@ -25,7 +25,7 @@ Routes: / public home from settings, /{slug} live page, /about, /dashboard edito
 
 Page GET/PUT /api/v1/me/page and GET /api/v1/public/pages/{slug} now include avatarShape (circle|rounded|square), accentColor, background (cream|white|dark|motion), motion (none|subtle|lively). Defaults: circle, #111111, cream, subtle.
 
-Admin GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings add metaTitle, metaDescription, ogImage, favicon, themeColor. Wire Next head from public settings.
+Admin GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings add metaTitle, metaDescription, ogImage, favicon, themeColor plus home copy: heroTitle, heroSubtitle, heroCta, heroImage, demoSlug. GET /api/v1/me/page and /me/page/links return 200 empty when unsaved.
 
 Local: cd backend && go test ./... && go run ./cmd/server
 In-memory store. Render free tier sleeps and wipes data. See CHANGELOG.md and backend/README.md.

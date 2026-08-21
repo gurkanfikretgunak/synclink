@@ -17,7 +17,9 @@ Render: ../render.yaml (rootDir backend, Frankfurt).
 
 Password: PUT /me/password, POST /auth/forgot-password, POST /auth/reset-password (demo resetToken in forgot response).
 
-Admin: first signup is admin. /admin/* JWT. Public settings: GET /api/v1/public/settings.
+Admin: first signup is admin if the store is empty. Process start seeds admin@synclink.app and gurkanfikretgunak@gmail.com plus a /gurkan demo page so a Render wipe still has data. Later signups stay user. /admin/* JWT. Public settings: GET /api/v1/public/settings.
+
+GET /me/page returns 200 with an empty PageDTO (empty slug) when unsaved. GET /me/page/links returns 200 [].
 
 Look fields on page: avatarShape, accentColor, background, motion.
-Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor.
+Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor, heroTitle, heroSubtitle, heroCta, heroImage, demoSlug.
