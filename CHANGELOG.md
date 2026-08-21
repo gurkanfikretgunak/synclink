@@ -4,6 +4,12 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-21
+
+### Added
+- Fira Code across the app.
+- Dashboard live preview, details (avatar/theme/notes), change password, forgot/reset gates, `/reset` page.
+
 ## [0.2.0] - 2026-08-21
 
 ### Changed

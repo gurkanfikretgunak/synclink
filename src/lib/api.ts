@@ -85,10 +85,6 @@ export type LoginResponse = {
   user: {
     id: string;
     email: string;
-    first_name: string;
-    last_name: string;
-    status: string;
-    created_at: string;
   };
 };
 
@@ -141,6 +137,25 @@ export const synclink = {
     return request<LoginResponse>("/api/v1/auth/register", {
       method: "POST",
       body: JSON.stringify({ email, password }),
+    });
+  },
+  forgotPassword(email: string) {
+    return request<{ ok: boolean; resetToken?: string; expiresIn?: number }>(
+      "/api/v1/auth/forgot-password",
+      { method: "POST", body: JSON.stringify({ email }) },
+    );
+  },
+  resetPassword(email: string, token: string, newPassword: string) {
+    return request<{ ok: boolean }>("/api/v1/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({ email, token, newPassword }),
+    });
+  },
+  changePassword(token: string, currentPassword: string, newPassword: string) {
+    return request<{ ok: boolean }>("/api/v1/me/password", {
+      method: "PUT",
+      token,
+      body: JSON.stringify({ currentPassword, newPassword }),
     });
   },
   getMyPage(token: string) {
