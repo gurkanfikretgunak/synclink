@@ -63,7 +63,7 @@ export default function DashboardPage() {
 
   async function boot(next: string) {
     try {
-      const [mine, items] = await Promise.all([synclink.mePage(next), synclink.listLinks(next)]);
+      const [mine, items] = await Promise.all([synclink.getMyPage(next), synclink.listLinks(next)]);
       setPage(mine);
       setLinks(items);
     } catch {

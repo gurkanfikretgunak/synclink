@@ -26,7 +26,7 @@ export default async function PublicPage({ params }: PageProps<"/[slug]">) {
   const { slug } = await params;
   let page;
   try {
-    page = await synclink.publicPage(slug);
+    page = await synclink.getPublicPage(slug);
   } catch {
     notFound();
   }
@@ -52,7 +52,7 @@ export default async function PublicPage({ params }: PageProps<"/[slug]">) {
         <h1 className="mt-5 text-2xl font-medium tracking-tight">{page.displayName}</h1>
         {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
         <ul className="mt-10 w-full space-y-3">
-          {page.links.map((link) => (
+          {page.links.map((link: { id: string; url: string; title: string }) => (
             <li key={link.id}>
               <a
                 href={link.url}
