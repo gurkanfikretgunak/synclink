@@ -92,7 +92,6 @@ export type UpdateLinkInput = {
   active?: boolean;
 };
 
-
 export type AdminUser = {
   id: string;
   email: string;
@@ -113,6 +112,12 @@ export type PlatformSettings = {
   ogImage: string;
   favicon: string;
   themeColor: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroCta: string;
+  heroCtaHref: string;
+  heroImage: string;
+  demoSlug: string;
 };
 
 export type LoginResponse = {
@@ -126,11 +131,18 @@ export type LoginResponse = {
 type ApiError = {
   error?: string;
   message?: string;
+  code?: number;
 };
+
+function isNotFound(data: ApiError, status: number): boolean {
+  if (status === 404) return true;
+  const text = `${data.error || ""} ${data.message || ""}`.toLowerCase();
+  return text.includes("not found");
+}
 
 async function request<T>(
   path: string,
-  init: RequestInit & { token?: string | null } = {},
+  init: RequestInit & { token?: string | null; allow404?: boolean } = {},
 ): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has("Content-Type")) {
@@ -153,6 +165,9 @@ async function request<T>(
   const text = await res.text();
   const data = text ? (JSON.parse(text) as T & ApiError) : ({} as T & ApiError);
   if (!res.ok) {
+    if (init.allow404 && isNotFound(data, res.status)) {
+      return null as T;
+    }
     throw new Error(data.message || data.error || res.statusText);
   }
   return data;
@@ -194,7 +209,7 @@ export const synclink = {
     });
   },
   getMyPage(token: string) {
-    return request<Page>("/api/v1/me/page", { token });
+    return request<Page | null>("/api/v1/me/page", { token, allow404: true });
   },
   upsertPage(token: string, input: UpsertPageInput) {
     return request<Page>("/api/v1/me/page", {
@@ -204,7 +219,9 @@ export const synclink = {
     });
   },
   listLinks(token: string) {
-    return request<LinkItem[]>("/api/v1/me/page/links", { token });
+    return request<LinkItem[] | null>("/api/v1/me/page/links", { token, allow404: true }).then(
+      (items) => items || [],
+    );
   },
   createLink(token: string, input: CreateLinkInput) {
     return request<LinkItem>("/api/v1/me/page/links", {
@@ -269,4 +286,3 @@ export const synclink = {
     });
   },
 };
-

@@ -25,6 +25,12 @@ const emptySettings: PlatformSettings = {
   ogImage: "",
   favicon: "",
   themeColor: "#111111",
+  heroTitle: "",
+  heroSubtitle: "",
+  heroCta: "",
+  heroCtaHref: "/dashboard",
+  heroImage: "",
+  demoSlug: "gurkan",
 };
 
 export default function AdminPage() {
@@ -51,7 +57,7 @@ export default function AdminPage() {
       setStats(st);
       setUsers(us);
       setPages(pg);
-      setSettings(se);
+      setSettings({ ...emptySettings, ...se });
       setError("");
     } catch (err) {
       setMe(null);
@@ -265,6 +271,12 @@ export default function AdminPage() {
                 <div className="space-y-2"><Label htmlFor="ogImage">OG image URL</Label><Input id="ogImage" value={settings.ogImage} onChange={(e) => setSettings({ ...settings, ogImage: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="favicon">Favicon URL</Label><Input id="favicon" value={settings.favicon} onChange={(e) => setSettings({ ...settings, favicon: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="themeColor">Theme color</Label><Input id="themeColor" value={settings.themeColor} onChange={(e) => setSettings({ ...settings, themeColor: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="heroTitle">Hero title</Label><Input id="heroTitle" value={settings.heroTitle || ""} onChange={(e) => setSettings({ ...settings, heroTitle: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="heroSubtitle">Hero subtitle</Label><Textarea id="heroSubtitle" value={settings.heroSubtitle || ""} onChange={(e) => setSettings({ ...settings, heroSubtitle: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="heroCta">Hero CTA</Label><Input id="heroCta" value={settings.heroCta || ""} onChange={(e) => setSettings({ ...settings, heroCta: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="heroCtaHref">Hero CTA href</Label><Input id="heroCtaHref" value={settings.heroCtaHref || ""} onChange={(e) => setSettings({ ...settings, heroCtaHref: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="heroImage">Hero image URL</Label><Input id="heroImage" value={settings.heroImage || ""} onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })} /></div>
+                <div className="space-y-2"><Label htmlFor="demoSlug">Demo slug</Label><Input id="demoSlug" value={settings.demoSlug || ""} onChange={(e) => setSettings({ ...settings, demoSlug: e.target.value })} /></div>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.signupEnabled} onChange={(e) => setSettings({ ...settings, signupEnabled: e.target.checked })} /> Signup enabled</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.maintenance} onChange={(e) => setSettings({ ...settings, maintenance: e.target.checked })} /> Maintenance</label>
                 <Button type="submit">Save settings</Button>

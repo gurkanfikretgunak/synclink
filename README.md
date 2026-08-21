@@ -29,3 +29,6 @@ Admin GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings add metaTit
 
 Local: cd backend && go test ./... && go run ./cmd/server
 In-memory store. Render free tier sleeps and wipes data. See CHANGELOG.md and backend/README.md.
+
+
+Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields come from public settings.

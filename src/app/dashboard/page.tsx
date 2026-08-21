@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getToken, setToken, synclink, type LinkItem, type Page } from "@/lib/api";
 
 type Gate = "login" | "register" | "forgot" | "reset";
-type Panel = "identity" | "look" | "links" | "account" | null;
+type Panel = "identity" | "look" | "links" | "account";
 
 const emptyPage: Page = {
   id: "",
@@ -43,10 +43,19 @@ const shapeClass: Record<string, string> = {
   square: "rounded-none",
 };
 
+function slugFromEmail(value: string) {
+  return value.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "") || "page";
+}
+
+function draftFrom(email: string): Page {
+  const slug = slugFromEmail(email);
+  return { ...emptyPage, slug, displayName: slug };
+}
+
 export default function DashboardPage() {
   const [token, setTok] = useState<string | null>(null);
   const [gate, setGate] = useState<Gate>("login");
-  const [panel, setPanel] = useState<Panel>(null);
+  const [panel, setPanel] = useState<Panel>("identity");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -54,29 +63,43 @@ export default function DashboardPage() {
   const [resetToken, setResetToken] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [saving, setSaving] = useState(false);
   const [page, setPage] = useState<Page>(emptyPage);
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
 
-  const preview = useMemo(() => page, [page]);
+  const saved = Boolean(page.id);
+  const canOpen = saved && Boolean(page.slug);
 
-  async function boot(next: string) {
-    try {
-      const [mine, items] = await Promise.all([synclink.getMyPage(next), synclink.listLinks(next)]);
-      setPage(mine);
+  async function boot(next: string, fallbackEmail = "") {
+    setError("");
+    const [mine, items] = await Promise.all([synclink.getMyPage(next), synclink.listLinks(next)]);
+    if (mine && mine.id) {
+      setPage({
+        ...emptyPage,
+        ...mine,
+        avatarShape: mine.avatarShape || "circle",
+        accentColor: mine.accentColor || "#111111",
+        background: mine.background || "cream",
+        motion: mine.motion || "subtle",
+      });
       setLinks(items);
-    } catch {
-      setPage(emptyPage);
-      setLinks([]);
+      return;
     }
+    setPage(draftFrom(fallbackEmail || email));
+    setLinks([]);
   }
 
   useEffect(() => {
-    const saved = getToken();
-    if (!saved) return;
-    setTok(saved);
-    void boot(saved);
+    const savedToken = getToken();
+    if (!savedToken) return;
+    setTok(savedToken);
+    void boot(savedToken).catch((err) => {
+      setError(err instanceof Error ? err.message : "Could not load page");
+      setPage(emptyPage);
+      setLinks([]);
+    });
   }, []);
 
   async function onAuth(event: FormEvent) {
@@ -87,7 +110,7 @@ export default function DashboardPage() {
       const res = gate === "register" ? await synclink.register(email, password) : await synclink.login(email, password);
       setToken(res.token);
       setTok(res.token);
-      await boot(res.token);
+      await boot(res.token, res.user.email || email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
     }
@@ -120,14 +143,19 @@ export default function DashboardPage() {
     }
   }
 
-  async function savePage(event: FormEvent) {
-    event.preventDefault();
-    if (!token) return;
+  async function savePage(): Promise<Page | null> {
+    if (!token) return null;
+    if (!page.slug.trim() || !page.displayName.trim()) {
+      setError("Slug and display name are required to publish.");
+      setPanel("identity");
+      return null;
+    }
+    setSaving(true);
     setError("");
     try {
       const next = await synclink.upsertPage(token, {
-        slug: page.slug,
-        displayName: page.displayName,
+        slug: page.slug.trim(),
+        displayName: page.displayName.trim(),
         bio: page.bio,
         avatarUrl: page.avatarUrl,
         theme: page.theme,
@@ -137,11 +165,19 @@ export default function DashboardPage() {
         motion: page.motion,
       });
       setPage(next);
-      setNotice("Page saved.");
-      setPanel(null);
+      setNotice(`Live at /${next.slug}`);
+      return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save page");
+      return null;
+    } finally {
+      setSaving(false);
     }
+  }
+
+  async function onSavePage(event: FormEvent) {
+    event.preventDefault();
+    await savePage();
   }
 
   async function addLink(event: FormEvent) {
@@ -149,12 +185,28 @@ export default function DashboardPage() {
     if (!token) return;
     setError("");
     try {
+      let live = page;
+      if (!live.id) {
+        const published = await savePage();
+        if (!published) return;
+        live = published;
+      }
       const created = await synclink.createLink(token, { title: linkTitle, url: linkUrl });
       setLinks((current) => [...current, created]);
       setLinkTitle("");
       setLinkUrl("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add link");
+    }
+  }
+
+  async function patchLink(id: string, input: { title?: string; url?: string; active?: boolean }) {
+    if (!token) return;
+    try {
+      const next = await synclink.updateLink(token, id, input);
+      setLinks((current) => current.map((item) => (item.id === next.id ? next : item)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not update link");
     }
   }
 
@@ -166,7 +218,10 @@ export default function DashboardPage() {
     const next = [...links];
     [next[i], next[j]] = [next[j], next[i]];
     setLinks(next);
-    await synclink.reorderLinks(token, next.map((item) => item.id));
+    await synclink.reorderLinks(
+      token,
+      next.map((item) => item.id),
+    );
   }
 
   async function changePassword(event: FormEvent) {
@@ -178,7 +233,6 @@ export default function DashboardPage() {
       setNotice("Password updated.");
       setCurrentPassword("");
       setNewPassword("");
-      setPanel(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not change password");
     }
@@ -191,17 +245,18 @@ export default function DashboardPage() {
     setLinks([]);
   }
 
-  const shape = shapeClass[preview.avatarShape] || shapeClass.circle;
-  const tone = bgClass[preview.background] || bgClass.cream;
-  const dark = preview.background === "dark";
+  const shape = shapeClass[page.avatarShape] || shapeClass.circle;
+  const tone = bgClass[page.background] || bgClass.cream;
+  const dark = page.background === "dark";
+  const activeLinks = links.filter((item) => item.active);
 
   if (!token) {
     return (
       <main className="page-enter mx-auto grid min-h-full w-full max-w-5xl items-center gap-10 px-6 py-16 md:grid-cols-2">
         <div>
           <p className="text-xs tracking-[0.28em] text-neutral-400">SYNCLINK</p>
-          <h1 className="mt-3 text-4xl font-medium tracking-tight">Your page, edited live.</h1>
-          <p className="mt-3 text-sm leading-6 text-neutral-600">Sign in, then tap a preview card to open the editor.</p>
+          <h1 className="mt-3 text-4xl font-medium tracking-tight">Studio</h1>
+          <p className="mt-3 text-sm leading-6 text-neutral-600">Sign in. Preview stays on the right. Tap a card to edit.</p>
           <Card className="mt-8 border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">{gate === "register" ? "Create account" : gate === "forgot" || gate === "reset" ? "Reset password" : "Sign in"}</CardTitle>
@@ -248,44 +303,33 @@ export default function DashboardPage() {
   return (
     <main className="page-enter mx-auto grid min-h-full w-full max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs tracking-[0.28em] text-neutral-400">DASHBOARD</p>
             <h1 className="mt-2 text-3xl font-medium tracking-tight">Studio</h1>
+            <p className="mt-1 text-sm text-neutral-500">{saved ? `Saved · /${page.slug}` : "Unsaved draft"}</p>
           </div>
           <div className="flex gap-2">
-            {page.slug ? <Link href={`/${page.slug}`} className="text-sm underline">Open /{page.slug}</Link> : null}
+            {canOpen ? <Link href={`/${page.slug}`} className="text-sm underline">Open live</Link> : null}
             <button type="button" className="text-sm text-neutral-500 underline" onClick={signOut}>Sign out</button>
           </div>
         </div>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
         {notice ? <p className="text-sm text-neutral-600">{notice}</p> : null}
 
-        {!panel ? (
-          <Card className="border-dashed border-neutral-200 bg-white/60 shadow-none">
-            <CardHeader>
-              <CardTitle className="text-lg font-medium">Tap a card on the right</CardTitle>
-              <CardDescription>Identity, look, or links. The editor opens here.</CardDescription>
-            </CardHeader>
-          </Card>
-        ) : null}
-
         {panel === "identity" ? (
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Identity</CardTitle>
-              <CardDescription>Name, slug, bio, avatar.</CardDescription>
+              <CardDescription>Slug, name, bio, avatar. This is what people see first.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4" onSubmit={savePage}>
+              <form className="space-y-4" onSubmit={onSavePage}>
                 <div className="space-y-2"><Label htmlFor="slug">Slug</Label><Input id="slug" value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value })} required /></div>
                 <div className="space-y-2"><Label htmlFor="displayName">Display name</Label><Input id="displayName" value={page.displayName} onChange={(e) => setPage({ ...page, displayName: e.target.value })} required /></div>
                 <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" value={page.bio} onChange={(e) => setPage({ ...page, bio: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input id="avatarUrl" value={page.avatarUrl || ""} onChange={(e) => setPage({ ...page, avatarUrl: e.target.value || null })} /></div>
-                <div className="flex gap-2">
-                  <Button type="submit">Save</Button>
-                  <Button type="button" variant="ghost" onClick={() => setPanel(null)}>Close</Button>
-                </div>
+                <Button type="submit" disabled={saving}>{saving ? "Saving…" : saved ? "Save identity" : "Publish page"}</Button>
               </form>
             </CardContent>
           </Card>
@@ -295,10 +339,10 @@ export default function DashboardPage() {
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Look</CardTitle>
-              <CardDescription>Shape, accent, background, motion.</CardDescription>
+              <CardDescription>Preview updates as you tap. Save to persist.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4" onSubmit={savePage}>
+              <form className="space-y-4" onSubmit={onSavePage}>
                 <div className="space-y-2">
                   <Label>Avatar shape</Label>
                   <div className="flex flex-wrap gap-2">
@@ -324,10 +368,7 @@ export default function DashboardPage() {
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button type="submit">Save look</Button>
-                  <Button type="button" variant="ghost" onClick={() => setPanel(null)}>Close</Button>
-                </div>
+                <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save look"}</Button>
               </form>
             </CardContent>
           </Card>
@@ -337,7 +378,7 @@ export default function DashboardPage() {
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Links</CardTitle>
-              <CardDescription>Add, hide, reorder.</CardDescription>
+              <CardDescription>{saved ? "Add, edit, hide, reorder." : "Publishes the page first, then adds the link."}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]" onSubmit={addLink}>
@@ -348,21 +389,18 @@ export default function DashboardPage() {
               <Separator />
               <ul className="space-y-3">
                 {links.map((item, index) => (
-                  <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium">{item.title}</p>
-                      <p className="text-xs text-neutral-500">{item.url}</p>
-                    </div>
-                    <div className="flex gap-1">
+                  <li key={item.id} className="space-y-2 rounded-2xl border border-neutral-200 px-4 py-3">
+                    <Input defaultValue={item.title} onBlur={(e) => e.target.value !== item.title && void patchLink(item.id, { title: e.target.value })} />
+                    <Input defaultValue={item.url} onBlur={(e) => e.target.value !== item.url && void patchLink(item.id, { url: e.target.value })} />
+                    <div className="flex flex-wrap gap-1">
                       <Button type="button" size="sm" variant="ghost" disabled={index === 0} onClick={() => void move(item.id, -1)}>Up</Button>
                       <Button type="button" size="sm" variant="ghost" disabled={index === links.length - 1} onClick={() => void move(item.id, 1)}>Down</Button>
-                      <Button type="button" size="sm" variant="ghost" onClick={() => token && synclink.updateLink(token, item.id, { active: !item.active }).then((next) => setLinks((c) => c.map((l) => (l.id === next.id ? next : l))))}>{item.active ? "Hide" : "Show"}</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => void patchLink(item.id, { active: !item.active })}>{item.active ? "Hide" : "Show"}</Button>
                       <Button type="button" size="sm" variant="ghost" onClick={() => token && synclink.deleteLink(token, item.id).then(() => setLinks((c) => c.filter((l) => l.id !== item.id)))}>Delete</Button>
                     </div>
                   </li>
                 ))}
               </ul>
-              <Button type="button" variant="ghost" onClick={() => setPanel(null)}>Close</Button>
             </CardContent>
           </Card>
         ) : null}
@@ -376,42 +414,40 @@ export default function DashboardPage() {
               <form className="space-y-4" onSubmit={changePassword}>
                 <div className="space-y-2"><Label htmlFor="currentPassword">Current</Label><Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required /></div>
                 <div className="space-y-2"><Label htmlFor="newPassword">New</Label><Input id="newPassword" type="password" minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required /></div>
-                <div className="flex gap-2">
-                  <Button type="submit">Update</Button>
-                  <Button type="button" variant="ghost" onClick={() => setPanel(null)}>Close</Button>
-                </div>
+                <Button type="submit">Update</Button>
               </form>
             </CardContent>
           </Card>
         ) : null}
       </section>
 
-      <aside className="space-y-4 lg:sticky lg:top-8 lg:self-start">
+      <aside className="order-first space-y-4 lg:order-none lg:sticky lg:top-8 lg:self-start">
         <button type="button" onClick={() => setPanel("identity")} className={`w-full overflow-hidden rounded-3xl border text-left ${tone} ${panel === "identity" ? "ring-2 ring-neutral-900" : "border-neutral-200"}`}>
           <div className="px-5 py-6">
-            <p className="text-[10px] tracking-[0.24em] opacity-50">PREVIEW</p>
+            <p className="text-[10px] tracking-[0.24em] opacity-50">{saved ? "LIVE PREVIEW" : "DRAFT PREVIEW"}</p>
             <div className="mt-4 flex items-center gap-3">
               <Avatar className={`size-12 border ${shape} ${dark ? "border-white/15" : "border-neutral-200"}`}>
-                {preview.avatarUrl ? <AvatarImage src={preview.avatarUrl} alt="" /> : null}
-                <AvatarFallback>{(preview.displayName || "S").slice(0, 1)}</AvatarFallback>
+                {page.avatarUrl ? <AvatarImage src={page.avatarUrl} alt="" /> : null}
+                <AvatarFallback>{(page.displayName || "S").slice(0, 1).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-medium">{preview.displayName || "Your name"}</p>
-                <p className="text-xs opacity-60">/{preview.slug || "slug"}</p>
+                <p className="text-sm font-medium">{page.displayName || "Your name"}</p>
+                <p className="text-xs opacity-60">/{page.slug || "slug"}</p>
               </div>
             </div>
-            <p className="mt-3 text-xs leading-5 opacity-70">{preview.bio || "Bio appears here."}</p>
+            <p className="mt-3 text-xs leading-5 opacity-70">{page.bio || "Bio appears here."}</p>
             <ul className="mt-4 space-y-2">
-              {links.filter((item) => item.active).map((item) => (
-                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`}>{item.title}</li>
+              {activeLinks.map((item) => (
+                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.title}</li>
               ))}
+              {activeLinks.length === 0 ? <li className="text-xs opacity-50">No links yet</li> : null}
             </ul>
           </div>
         </button>
         <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "look" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("look")}>
           <CardHeader>
             <CardTitle className="text-base font-medium">Look</CardTitle>
-            <CardDescription>{preview.avatarShape} · {preview.background} · {preview.motion}</CardDescription>
+            <CardDescription>{page.avatarShape} · {page.background} · {page.motion}</CardDescription>
           </CardHeader>
         </Card>
         <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "links" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("links")}>

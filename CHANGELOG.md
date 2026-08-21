@@ -12,6 +12,9 @@ All notable changes to SyncLink live in this file.
 ### Added
 - In-memory seed after Render wipe: admin@synclink.app and gurkanfikretgunak@gmail.com (admins), plus a demo /gurkan page with links so the site has data at process start.
 - Home/design copy on GET /api/v1/public/settings and GET/PUT /api/v1/admin/settings: heroTitle, heroSubtitle, heroCta, heroImage, demoSlug.
+- Next dashboard studio: 404 or empty /me/page is an unsaved draft. Live preview on the right, tap a card to edit. Inline link edit. Look fields persist.
+- Homepage hero reads public settings (title, subtitle, CTA, image, demoSlug) with local fallbacks. Admin can edit those fields.
+
 
 ## [0.5.0] - 2026-08-21
 
