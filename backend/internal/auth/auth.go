@@ -1,0 +1,113 @@
+package auth
+
+import (
+	"context"
+	"errors"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrInvalidCreds = errors.New("invalid credentials")
+	ErrExists       = errors.New("already exists")
+)
+
+type User struct {
+	ID           uuid.UUID `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+}
+
+type Service struct {
+	mu     sync.Mutex
+	users  map[string]*User
+	byID   map[uuid.UUID]*User
+	secret []byte
+}
+
+func NewService() *Service {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		secret = "dev-secret"
+	}
+	return &Service{
+		users:  map[string]*User{},
+		byID:   map[uuid.UUID]*User{},
+		secret: []byte(secret),
+	}
+}
+
+type Claims struct {
+	UserID uuid.UUID `json:"uid"`
+	Email  string    `json:"email"`
+	jwt.RegisteredClaims
+}
+
+func (s *Service) Register(ctx context.Context, email, password string) (*User, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.users[email]; ok {
+		return nil, "", ErrExists
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, "", err
+	}
+	u := &User{ID: uuid.New(), Email: email, PasswordHash: string(hash)}
+	s.users[email] = u
+	s.byID[u.ID] = u
+	tok, err := s.token(u)
+	return u, tok, err
+}
+
+func (s *Service) Login(ctx context.Context, email, password string) (*User, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	u, ok := s.users[email]
+	if !ok {
+		return nil, "", ErrInvalidCreds
+	}
+	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) != nil {
+		return nil, "", ErrInvalidCreds
+	}
+	tok, err := s.token(u)
+	return u, tok, err
+}
+
+func (s *Service) User(id uuid.UUID) (*User, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	u, ok := s.byID[id]
+	return u, ok
+}
+
+func (s *Service) token(u *User) (string, error) {
+	claims := Claims{
+		UserID: u.ID,
+		Email:  u.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString(s.secret)
+}
+
+func (s *Service) Parse(token string) (*Claims, error) {
+	parsed, err := jwt.ParseWithClaims(token, &Claims{}, func(t *jwt.Token) (interface{}, error) {
+		return s.secret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	claims, ok := parsed.Claims.(*Claims)
+	if !ok || !parsed.Valid {
+		return nil, errors.New("invalid token")
+	}
+	return claims, nil
+}

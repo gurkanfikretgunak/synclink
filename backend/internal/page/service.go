@@ -1,0 +1,237 @@
+package page
+
+import (
+	"context"
+	"errors"
+	"regexp"
+	"strings"
+
+	"github.com/google/uuid"
+)
+
+var slugRE = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,62}[a-z0-9])?$`)
+
+type Service struct {
+	store Store
+}
+
+func NewService(store Store) *Service {
+	return &Service{store: store}
+}
+
+func normalizeSlug(slug string) (string, error) {
+	s := strings.ToLower(strings.TrimSpace(slug))
+	if !slugRE.MatchString(s) {
+		return "", ErrValidation
+	}
+	return s, nil
+}
+
+func isNotFound(err error) bool {
+	return errors.Is(err, ErrNotFound)
+}
+
+func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, error) {
+	normalized, err := normalizeSlug(slug)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	p, err := s.store.GetPageBySlug(ctx, normalized)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	links, err := s.store.ListLinks(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PublicLink, 0, len(links))
+	for _, l := range links {
+		if !l.Active {
+			continue
+		}
+		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order})
+	}
+	return &PublicPage{
+		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
+		AvatarURL: p.AvatarURL, Theme: p.Theme, Links: out,
+	}, nil
+}
+
+func (s *Service) GetMyPage(ctx context.Context, userID uuid.UUID) (*PageDTO, error) {
+	p, err := s.store.GetPageByUserID(ctx, userID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	dto := ToPageDTO(p)
+	return &dto, nil
+}
+
+func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPageInput) (*PageDTO, error) {
+	slug, err := normalizeSlug(in.Slug)
+	if err != nil {
+		return nil, ErrValidation
+	}
+	theme := strings.TrimSpace(in.Theme)
+	if theme == "" {
+		theme = ThemeDefault
+	}
+	if !ValidTheme(theme) {
+		return nil, ErrValidation
+	}
+	bySlug, slugErr := s.store.GetPageBySlug(ctx, slug)
+	if slugErr != nil && !isNotFound(slugErr) {
+		return nil, slugErr
+	}
+	mine, mineErr := s.store.GetPageByUserID(ctx, userID)
+	if mineErr != nil && !isNotFound(mineErr) {
+		return nil, mineErr
+	}
+	if bySlug != nil && (mine == nil || bySlug.ID != mine.ID) {
+		return nil, ErrConflict
+	}
+	if mine != nil {
+		mine.Slug = slug
+		mine.DisplayName = strings.TrimSpace(in.DisplayName)
+		mine.Bio = strings.TrimSpace(in.Bio)
+		mine.AvatarURL = in.AvatarURL
+		mine.Theme = theme
+		if err := s.store.UpdatePage(ctx, mine); err != nil {
+			return nil, err
+		}
+		dto := ToPageDTO(mine)
+		return &dto, nil
+	}
+	p := &Page{
+		ID: uuid.New(), UserID: userID, Slug: slug,
+		DisplayName: strings.TrimSpace(in.DisplayName),
+		Bio: strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
+	}
+	if err := s.store.CreatePage(ctx, p); err != nil {
+		return nil, err
+	}
+	dto := ToPageDTO(p)
+	return &dto, nil
+}
+
+func (s *Service) requirePage(ctx context.Context, userID uuid.UUID) (*Page, error) {
+	p, err := s.store.GetPageByUserID(ctx, userID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	return p, nil
+}
+
+func (s *Service) ListLinks(ctx context.Context, userID uuid.UUID) ([]LinkDTO, error) {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	links, err := s.store.ListLinks(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]LinkDTO, 0, len(links))
+	for _, l := range links {
+		out = append(out, ToLinkDTO(l))
+	}
+	return out, nil
+}
+
+func (s *Service) CreateLink(ctx context.Context, userID uuid.UUID, in CreateLinkInput) (*LinkDTO, error) {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(in.Title) == "" || strings.TrimSpace(in.URL) == "" {
+		return nil, ErrValidation
+	}
+	max, err := s.store.MaxOrder(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	active := true
+	if in.Active != nil {
+		active = *in.Active
+	}
+	l := &Link{
+		ID: uuid.New(), PageID: p.ID, Title: strings.TrimSpace(in.Title),
+		URL: strings.TrimSpace(in.URL), Icon: in.Icon, Order: max + 1, Active: active,
+	}
+	if err := s.store.CreateLink(ctx, l); err != nil {
+		return nil, err
+	}
+	dto := ToLinkDTO(l)
+	return &dto, nil
+}
+
+func (s *Service) UpdateLink(ctx context.Context, userID, linkID uuid.UUID, in UpdateLinkInput) (*LinkDTO, error) {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	l, err := s.store.GetLinkByID(ctx, linkID)
+	if err != nil || l.PageID != p.ID {
+		return nil, ErrNotFound
+	}
+	if in.Title != nil {
+		l.Title = strings.TrimSpace(*in.Title)
+	}
+	if in.URL != nil {
+		l.URL = strings.TrimSpace(*in.URL)
+	}
+	if in.Icon != nil {
+		l.Icon = in.Icon
+	}
+	if in.Active != nil {
+		l.Active = *in.Active
+	}
+	if err := s.store.UpdateLink(ctx, l); err != nil {
+		return nil, err
+	}
+	dto := ToLinkDTO(l)
+	return &dto, nil
+}
+
+func (s *Service) DeleteLink(ctx context.Context, userID, linkID uuid.UUID) error {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return err
+	}
+	l, err := s.store.GetLinkByID(ctx, linkID)
+	if err != nil || l.PageID != p.ID {
+		return ErrNotFound
+	}
+	return s.store.DeleteLink(ctx, l.ID)
+}
+
+func (s *Service) ReorderLinks(ctx context.Context, userID uuid.UUID, ids []uuid.UUID) ([]LinkDTO, error) {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	existing, err := s.store.ListLinks(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	owned := map[uuid.UUID]struct{}{}
+	for _, l := range existing {
+		owned[l.ID] = struct{}{}
+	}
+	if len(ids) != len(existing) {
+		return nil, ErrValidation
+	}
+	seen := map[uuid.UUID]struct{}{}
+	for _, id := range ids {
+		if _, ok := owned[id]; !ok {
+			return nil, ErrNotFound
+		}
+		if _, dup := seen[id]; dup {
+			return nil, ErrValidation
+		}
+		seen[id] = struct{}{}
+	}
+	if err := s.store.Reorder(ctx, p.ID, ids); err != nil {
+		return nil, err
+	}
+	return s.ListLinks(ctx, userID)
+}
