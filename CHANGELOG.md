@@ -15,3 +15,6 @@ All notable changes to SyncLink live in this file.
 
 ### Changed
 - Backend is this repo, not masterfabric-go.
+
+### Added
+- Live URLs: app https://synclink-mocha.vercel.app , API https://synclink-api.onrender.com
