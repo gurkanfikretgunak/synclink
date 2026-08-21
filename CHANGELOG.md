@@ -3,6 +3,7 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+- Dashboard Sign up on `/dashboard` plus `synclink.register` (`POST /api/v1/auth/register`).
 
 ## [0.1.0] - 2026-08-21
 

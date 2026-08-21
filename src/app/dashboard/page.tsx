@@ -59,6 +59,18 @@ export default function DashboardPage() {
     }
   }
 
+  async function onRegister(event?: { preventDefault: () => void }) {
+    event?.preventDefault();
+    try {
+      const result = await synclink.register(email, password);
+      setToken(result.token);
+      setTokenState(result.token);
+      await load(result.token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign up failed");
+    }
+  }
+
   async function onSavePage(event: FormEvent) {
     event.preventDefault();
     if (!token) return;
@@ -114,14 +126,15 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>SyncLink</CardTitle>
-            <CardDescription>Sign in to edit your page.</CardDescription>
+            <CardDescription>Sign in or create an account.</CardDescription>
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={onLogin}>
               <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
-              <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
+              <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
               <Button type="submit" className="w-full">Sign in</Button>
+              <Button type="button" variant="outline" className="w-full" onClick={onRegister}>Sign up</Button>
             </form>
           </CardContent>
         </Card>

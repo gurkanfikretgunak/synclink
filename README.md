@@ -10,3 +10,4 @@ See CHANGELOG.md and backend/README.md.
 
 - App: https://synclink-mocha.vercel.app
 - API: https://synclink-api.onrender.com
+Dashboard: sign in or Sign up (email + password, min 8).

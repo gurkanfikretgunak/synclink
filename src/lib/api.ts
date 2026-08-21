@@ -137,6 +137,12 @@ export const synclink = {
       body: JSON.stringify({ email, password }),
     });
   },
+  register(email: string, password: string) {
+    return request<LoginResponse>("/api/v1/auth/register", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  },
   getMyPage(token: string) {
     return request<Page>("/api/v1/me/page", { token });
   },
