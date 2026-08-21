@@ -30,6 +30,10 @@ type Page struct {
 	Bio         string
 	AvatarURL   *string
 	Theme       string
+	AvatarShape string
+	AccentColor string
+	Background  string
+	Motion      string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -53,6 +57,10 @@ type PageDTO struct {
 	Bio         string    `json:"bio"`
 	AvatarURL   *string   `json:"avatarUrl"`
 	Theme       string    `json:"theme"`
+	AvatarShape string    `json:"avatarShape"`
+	AccentColor string    `json:"accentColor"`
+	Background  string    `json:"background"`
+	Motion      string    `json:"motion"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -82,6 +90,10 @@ type PublicPage struct {
 	Bio         string       `json:"bio"`
 	AvatarURL   *string      `json:"avatarUrl"`
 	Theme       string       `json:"theme"`
+	AvatarShape string       `json:"avatarShape"`
+	AccentColor string       `json:"accentColor"`
+	Background  string       `json:"background"`
+	Motion      string       `json:"motion"`
 	Links       []PublicLink `json:"links"`
 }
 
@@ -91,6 +103,10 @@ type UpsertPageInput struct {
 	Bio         string  `json:"bio"`
 	AvatarURL   *string `json:"avatarUrl"`
 	Theme       string  `json:"theme"`
+	AvatarShape string  `json:"avatarShape"`
+	AccentColor string  `json:"accentColor"`
+	Background  string  `json:"background"`
+	Motion      string  `json:"motion"`
 }
 
 type CreateLinkInput struct {
@@ -110,7 +126,9 @@ type UpdateLinkInput struct {
 func ToPageDTO(p *Page) PageDTO {
 	return PageDTO{
 		ID: p.ID, Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
-		AvatarURL: p.AvatarURL, Theme: p.Theme, CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
+		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
+		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
 
@@ -119,4 +137,26 @@ func ToLinkDTO(l *Link) LinkDTO {
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon,
 		Order: l.Order, Active: l.Active, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
 	}
+}
+
+func NormalizeLook(shape, accent, bg, motion string) (string, string, string, string) {
+	switch shape {
+	case "circle", "rounded", "square":
+	default:
+		shape = "circle"
+	}
+	if accent == "" {
+		accent = "#111111"
+	}
+	switch bg {
+	case "cream", "white", "dark", "motion":
+	default:
+		bg = "cream"
+	}
+	switch motion {
+	case "none", "subtle", "lively":
+	default:
+		motion = "subtle"
+	}
+	return shape, accent, bg, motion
 }

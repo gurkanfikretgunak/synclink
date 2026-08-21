@@ -49,12 +49,15 @@ func NewService() *Service {
 		reset:  map[string]resetEntry{},
 		secret: []byte(secret),
 		settings: Settings{
-			SiteName:      "SyncLink",
-			Tagline:       "Your links, one page.",
-			About:         "SyncLink is a text-first page for people and brands.",
-			SupportEmail:  "hello@synclink.app",
-			SignupEnabled: true,
-			Maintenance:   false,
+			SiteName:        "SyncLink",
+			Tagline:         "Your links, one page.",
+			About:           "SyncLink is a text-first page for people and brands.",
+			SupportEmail:    "hello@synclink.app",
+			SignupEnabled:   true,
+			Maintenance:     false,
+			MetaTitle:       "SyncLink",
+			MetaDescription: "Your links, one page.",
+			ThemeColor:      "#111111",
 		},
 	}
 }

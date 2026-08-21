@@ -53,7 +53,8 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 	}
 	return &PublicPage{
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
-		AvatarURL: p.AvatarURL, Theme: p.Theme, Links: out,
+		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
+		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion, Links: out,
 	}, nil
 }
 
@@ -78,6 +79,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 	if !ValidTheme(theme) {
 		return nil, ErrValidation
 	}
+	shape, accent, bg, motion := NormalizeLook(strings.TrimSpace(in.AvatarShape), strings.TrimSpace(in.AccentColor), strings.TrimSpace(in.Background), strings.TrimSpace(in.Motion))
 	bySlug, slugErr := s.store.GetPageBySlug(ctx, slug)
 	if slugErr != nil && !isNotFound(slugErr) {
 		return nil, slugErr
@@ -95,6 +97,10 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		mine.Bio = strings.TrimSpace(in.Bio)
 		mine.AvatarURL = in.AvatarURL
 		mine.Theme = theme
+		mine.AvatarShape = shape
+		mine.AccentColor = accent
+		mine.Background = bg
+		mine.Motion = motion
 		if err := s.store.UpdatePage(ctx, mine); err != nil {
 			return nil, err
 		}
@@ -105,6 +111,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		ID: uuid.New(), UserID: userID, Slug: slug,
 		DisplayName: strings.TrimSpace(in.DisplayName),
 		Bio:         strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
+		AvatarShape: shape, AccentColor: accent, Background: bg, Motion: motion,
 	}
 	if err := s.store.CreatePage(ctx, p); err != nil {
 		return nil, err

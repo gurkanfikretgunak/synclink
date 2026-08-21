@@ -18,3 +18,6 @@ Render: ../render.yaml (rootDir backend, Frankfurt).
 Password: PUT /me/password, POST /auth/forgot-password, POST /auth/reset-password (demo resetToken in forgot response).
 
 Admin: first signup is admin. /admin/* JWT. Public settings: GET /api/v1/public/settings.
+
+Look fields on page: avatarShape, accentColor, background, motion.
+Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor.

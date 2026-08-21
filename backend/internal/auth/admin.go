@@ -85,12 +85,17 @@ func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 type Settings struct {
-	SiteName      string `json:"siteName"`
-	Tagline       string `json:"tagline"`
-	About         string `json:"about"`
-	SupportEmail  string `json:"supportEmail"`
-	SignupEnabled bool   `json:"signupEnabled"`
-	Maintenance   bool   `json:"maintenance"`
+	SiteName        string `json:"siteName"`
+	Tagline         string `json:"tagline"`
+	About           string `json:"about"`
+	SupportEmail    string `json:"supportEmail"`
+	SignupEnabled   bool   `json:"signupEnabled"`
+	Maintenance     bool   `json:"maintenance"`
+	MetaTitle       string `json:"metaTitle"`
+	MetaDescription string `json:"metaDescription"`
+	OgImage         string `json:"ogImage"`
+	Favicon         string `json:"favicon"`
+	ThemeColor      string `json:"themeColor"`
 }
 
 func (s *Service) Settings() Settings {
@@ -102,12 +107,17 @@ func (s *Service) Settings() Settings {
 func (s *Service) PublicSettings() map[string]any {
 	st := s.Settings()
 	return map[string]any{
-		"siteName":      st.SiteName,
-		"tagline":       st.Tagline,
-		"about":         st.About,
-		"supportEmail":  st.SupportEmail,
-		"signupEnabled": st.SignupEnabled,
-		"maintenance":   st.Maintenance,
+		"siteName":        st.SiteName,
+		"tagline":         st.Tagline,
+		"about":           st.About,
+		"supportEmail":    st.SupportEmail,
+		"signupEnabled":   st.SignupEnabled,
+		"maintenance":     st.Maintenance,
+		"metaTitle":       st.MetaTitle,
+		"metaDescription": st.MetaDescription,
+		"ogImage":         st.OgImage,
+		"favicon":         st.Favicon,
+		"themeColor":      st.ThemeColor,
 	}
 }
 
@@ -122,5 +132,10 @@ func (s *Service) UpdateSettings(in Settings) Settings {
 	s.settings.SupportEmail = strings.TrimSpace(in.SupportEmail)
 	s.settings.SignupEnabled = in.SignupEnabled
 	s.settings.Maintenance = in.Maintenance
+	s.settings.MetaTitle = strings.TrimSpace(in.MetaTitle)
+	s.settings.MetaDescription = strings.TrimSpace(in.MetaDescription)
+	s.settings.OgImage = strings.TrimSpace(in.OgImage)
+	s.settings.Favicon = strings.TrimSpace(in.Favicon)
+	s.settings.ThemeColor = strings.TrimSpace(in.ThemeColor)
 	return s.settings
 }
