@@ -15,3 +15,4 @@ v0.2.0 visual stations on /, /{slug}, /dashboard.
 v0.3.0 Fira Code, live preview, password flows.
 
 Admin API for /admin. First account is admin.
+v0.4.0 admin console, about, mobile sheets.

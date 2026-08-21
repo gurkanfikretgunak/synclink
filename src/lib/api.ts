@@ -80,6 +80,24 @@ export type UpdateLinkInput = {
   active?: boolean;
 };
 
+
+export type AdminUser = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: string;
+};
+
+export type PlatformSettings = {
+  siteName: string;
+  tagline: string;
+  about: string;
+  supportEmail: string;
+  signupEnabled: boolean;
+  maintenance: boolean;
+};
+
 export type LoginResponse = {
   token: string;
   user: {
@@ -198,4 +216,40 @@ export const synclink = {
       body: JSON.stringify({ ids }),
     });
   },
+  publicSettings() {
+    return request<PlatformSettings>("/api/v1/public/settings");
+  },
+  adminMe(token: string) {
+    return request<AdminUser>("/api/v1/admin/me", { token });
+  },
+  adminStats(token: string) {
+    return request<{ users: number; pages: number }>("/api/v1/admin/stats", { token });
+  },
+  adminUsers(token: string) {
+    return request<AdminUser[]>("/api/v1/admin/users", { token });
+  },
+  adminPatchUser(token: string, id: string, input: { role?: string; status?: string }) {
+    return request<AdminUser>(`/api/v1/admin/users/${id}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify(input),
+    });
+  },
+  adminDeleteUser(token: string, id: string) {
+    return request<void>(`/api/v1/admin/users/${id}`, { method: "DELETE", token });
+  },
+  adminPages(token: string) {
+    return request<Page[]>("/api/v1/admin/pages", { token });
+  },
+  adminSettings(token: string) {
+    return request<PlatformSettings>("/api/v1/admin/settings", { token });
+  },
+  adminPutSettings(token: string, input: PlatformSettings) {
+    return request<PlatformSettings>("/api/v1/admin/settings", {
+      method: "PUT",
+      token,
+      body: JSON.stringify(input),
+    });
+  },
 };
+

@@ -199,7 +199,7 @@ export default function DashboardPage() {
       <main className="grid min-h-full bg-[#faf9f7] md:grid-cols-2">
         <div className="hidden items-center justify-center p-12 md:flex">
           <div className="w-full max-w-md overflow-hidden rounded-3xl border border-neutral-200 bg-white">
-            <Image src="/stations/hero.png" alt="" width={1600} height={1200} className="h-auto w-full object-cover" />
+            <Image src="/stations/login.png" alt="" width={1600} height={1200} className="h-auto w-full object-cover" />
           </div>
         </div>
         <div className="flex flex-col justify-center px-6 py-16">
@@ -259,7 +259,7 @@ export default function DashboardPage() {
   return (
     <main className="min-h-full bg-[#faf9f7]">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <Link href="/" className="text-xs tracking-[0.28em] text-neutral-500">SYNCLINK STUDIO</Link>
+        <div className="flex items-center gap-3"><Link href="/" className="text-xs tracking-[0.28em] text-neutral-500">SYNCLINK STUDIO</Link><Link href="/admin" className="text-xs tracking-[0.18em] text-neutral-400">ADMIN</Link></div>
         <div className="flex gap-2">
           {slug ? (
             <Link href={`/${slug}`} className={buttonVariants({ variant: "outline", size: "sm" })} target="_blank">

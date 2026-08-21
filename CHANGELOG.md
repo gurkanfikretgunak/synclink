@@ -4,6 +4,13 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-21
+
+### Added
+- Admin console at `/admin` (stats, users table + mobile sheets, pages, platform settings).
+- Public `/about` from `GET /api/v1/public/settings`.
+- Login illustration on dashboard gate. Mobile-first tables/sheets.
+
 ## [0.3.0] - 2026-08-21
 
 ### Added
