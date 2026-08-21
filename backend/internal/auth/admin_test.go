@@ -56,13 +56,56 @@ func TestPublicSettingsHeroKeys(t *testing.T) {
 	if pub["demoSlug"] != "gurkan" {
 		t.Fatalf("demoSlug %v", pub["demoSlug"])
 	}
-	got := s.UpdateSettings(Settings{SiteName: "X", HeroTitle: "New hero", SignupEnabled: true})
-	if got.HeroTitle != "New hero" || got.HeroCta != "Create your page" {
+	if pub["heroCtaHref"] != "/dashboard" {
+		t.Fatalf("heroCtaHref %v", pub["heroCtaHref"])
+	}
+	nav, ok := pub["nav"].([]NavItem)
+	if !ok || len(nav) != 3 {
+		t.Fatalf("nav %v", pub["nav"])
+	}
+	if nav[0] != (NavItem{Label: "About", Href: "/about"}) ||
+		nav[1] != (NavItem{Label: "Admin", Href: "/admin"}) ||
+		nav[2] != (NavItem{Label: "Dashboard", Href: "/dashboard"}) {
+		t.Fatalf("default nav %#v", nav)
+	}
+	got := s.UpdateSettings(Settings{SiteName: "X", HeroTitle: "New hero", HeroCtaHref: "/about", SignupEnabled: true})
+	if got.HeroTitle != "New hero" || got.HeroCta != "Create your page" || got.HeroCtaHref != "/about" {
 		t.Fatalf("update %#v", got)
 	}
 	got = s.UpdateSettings(Settings{SiteName: "X", SignupEnabled: true})
 	if got.HeroTitle != "New hero" {
 		t.Fatalf("empty heroTitle should keep previous, got %#v", got)
+	}
+	if got.HeroCtaHref != "/about" {
+		t.Fatalf("empty heroCtaHref should keep previous, got %#v", got)
+	}
+	got = s.UpdateSettings(Settings{
+		SiteName:      "X",
+		SignupEnabled: true,
+		Nav:           []NavItem{{Label: " Home ", Href: " / "}},
+	})
+	if len(got.Nav) != 1 || got.Nav[0].Label != "Home" || got.Nav[0].Href != "/" {
+		t.Fatalf("nav replace %#v", got.Nav)
+	}
+	got = s.UpdateSettings(Settings{SiteName: "X", SignupEnabled: true})
+	if len(got.Nav) != 1 || got.Nav[0] != (NavItem{Label: "Home", Href: "/"}) {
+		t.Fatalf("empty nav should keep previous, got %#v", got.Nav)
+	}
+	got = s.UpdateSettings(Settings{
+		SiteName:      "X",
+		SignupEnabled: true,
+		Nav:           []NavItem{{Label: "  ", Href: "  "}},
+	})
+	if len(got.Nav) != 1 || got.Nav[0] != (NavItem{Label: "Home", Href: "/"}) {
+		t.Fatalf("trimmed-empty nav should keep previous, got %#v", got.Nav)
+	}
+	pub = s.PublicSettings()
+	if pub["heroCtaHref"] != "/about" {
+		t.Fatalf("public heroCtaHref after update %v", pub["heroCtaHref"])
+	}
+	nav, ok = pub["nav"].([]NavItem)
+	if !ok || len(nav) != 1 || nav[0] != (NavItem{Label: "Home", Href: "/"}) {
+		t.Fatalf("public nav after update %v", pub["nav"])
 	}
 }
 

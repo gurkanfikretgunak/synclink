@@ -61,8 +61,10 @@ func NewService() *Service {
 			HeroTitle:       "One page. Every link.",
 			HeroSubtitle:    "A quieter public page. White space, type, and a few stills. Edit from the dashboard.",
 			HeroCta:         "Create your page",
+			HeroCtaHref:     "/dashboard",
 			HeroImage:       "/stations/hero.png",
 			DemoSlug:        "gurkan",
+			Nav:             defaultNav(),
 		},
 	}
 }

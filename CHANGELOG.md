@@ -3,6 +3,10 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+
+### Added
+- public/admin settings now include heroCtaHref and nav [{label,href}].
+
 ## [0.6.0] - 2026-08-22
 
 ### Changed

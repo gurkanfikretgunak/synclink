@@ -22,4 +22,4 @@ Admin: first signup is admin if the store is empty. Process start seeds admin@sy
 GET /me/page returns 200 with an empty PageDTO (empty slug) when unsaved. GET /me/page/links returns 200 [].
 
 Look fields on page: avatarShape, accentColor, background, motion.
-Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor, heroTitle, heroSubtitle, heroCta, heroImage, demoSlug.
+Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor, heroTitle, heroSubtitle, heroCta, heroCtaHref, heroImage, demoSlug, nav [{label,href}].

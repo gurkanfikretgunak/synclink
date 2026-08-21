@@ -84,23 +84,66 @@ func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
+type NavItem struct {
+	Label string `json:"label"`
+	Href  string `json:"href"`
+}
+
+func defaultNav() []NavItem {
+	return []NavItem{
+		{Label: "About", Href: "/about"},
+		{Label: "Admin", Href: "/admin"},
+		{Label: "Dashboard", Href: "/dashboard"},
+	}
+}
+
+func trimNav(in []NavItem) []NavItem {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]NavItem, 0, len(in))
+	for _, item := range in {
+		label := strings.TrimSpace(item.Label)
+		href := strings.TrimSpace(item.Href)
+		if label == "" || href == "" {
+			continue
+		}
+		out = append(out, NavItem{Label: label, Href: href})
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func navOrDefault(nav []NavItem) []NavItem {
+	if len(nav) == 0 {
+		return defaultNav()
+	}
+	out := make([]NavItem, len(nav))
+	copy(out, nav)
+	return out
+}
+
 type Settings struct {
-	SiteName        string `json:"siteName"`
-	Tagline         string `json:"tagline"`
-	About           string `json:"about"`
-	SupportEmail    string `json:"supportEmail"`
-	SignupEnabled   bool   `json:"signupEnabled"`
-	Maintenance     bool   `json:"maintenance"`
-	MetaTitle       string `json:"metaTitle"`
-	MetaDescription string `json:"metaDescription"`
-	OgImage         string `json:"ogImage"`
-	Favicon         string `json:"favicon"`
-	ThemeColor      string `json:"themeColor"`
-	HeroTitle       string `json:"heroTitle"`
-	HeroSubtitle    string `json:"heroSubtitle"`
-	HeroCta         string `json:"heroCta"`
-	HeroImage       string `json:"heroImage"`
-	DemoSlug        string `json:"demoSlug"`
+	SiteName        string    `json:"siteName"`
+	Tagline         string    `json:"tagline"`
+	About           string    `json:"about"`
+	SupportEmail    string    `json:"supportEmail"`
+	SignupEnabled   bool      `json:"signupEnabled"`
+	Maintenance     bool      `json:"maintenance"`
+	MetaTitle       string    `json:"metaTitle"`
+	MetaDescription string    `json:"metaDescription"`
+	OgImage         string    `json:"ogImage"`
+	Favicon         string    `json:"favicon"`
+	ThemeColor      string    `json:"themeColor"`
+	HeroTitle       string    `json:"heroTitle"`
+	HeroSubtitle    string    `json:"heroSubtitle"`
+	HeroCta         string    `json:"heroCta"`
+	HeroCtaHref     string    `json:"heroCtaHref"`
+	HeroImage       string    `json:"heroImage"`
+	DemoSlug        string    `json:"demoSlug"`
+	Nav             []NavItem `json:"nav"`
 }
 
 func (s *Service) Settings() Settings {
@@ -126,8 +169,10 @@ func (s *Service) PublicSettings() map[string]any {
 		"heroTitle":       st.HeroTitle,
 		"heroSubtitle":    st.HeroSubtitle,
 		"heroCta":         st.HeroCta,
+		"heroCtaHref":     st.HeroCtaHref,
 		"heroImage":       st.HeroImage,
 		"demoSlug":        st.DemoSlug,
+		"nav":             navOrDefault(st.Nav),
 	}
 }
 
@@ -161,6 +206,12 @@ func (s *Service) UpdateSettings(in Settings) Settings {
 	}
 	if v := strings.TrimSpace(in.DemoSlug); v != "" {
 		s.settings.DemoSlug = v
+	}
+	if v := strings.TrimSpace(in.HeroCtaHref); v != "" {
+		s.settings.HeroCtaHref = v
+	}
+	if nav := trimNav(in.Nav); len(nav) > 0 {
+		s.settings.Nav = nav
 	}
 	return s.settings
 }
