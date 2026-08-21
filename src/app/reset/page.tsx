@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SiteNav } from "@/components/site-nav";
 import { synclink } from "@/lib/api";
 
 export default function ResetPage() {
@@ -27,7 +28,7 @@ export default function ResetPage() {
   }
 
   return (
-    <main className="flex min-h-full items-center justify-center bg-[#faf9f7] px-6 py-16">
+    <main className="min-h-full bg-[#faf9f7]"><SiteNav /><div className="flex items-center justify-center px-6 py-16">
       <Card className="w-full max-w-md border-neutral-200/80 bg-white shadow-none">
         <CardHeader>
           <p className="text-xs tracking-[0.28em] text-neutral-400">STATION 03 — RESET</p>
@@ -46,6 +47,6 @@ export default function ResetPage() {
           </form>
         </CardContent>
       </Card>
-    </main>
+    </div></main>
   );
 }

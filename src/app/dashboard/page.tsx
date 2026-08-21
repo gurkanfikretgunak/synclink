@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { SiteNav } from "@/components/site-nav";
 import { getToken, setToken, synclink, type LinkItem, type Page } from "@/lib/api";
 
 type Gate = "login" | "register" | "forgot" | "reset";
@@ -258,7 +259,9 @@ export default function DashboardPage() {
 
   if (!token) {
     return (
-      <main className="page-enter mx-auto grid min-h-full w-full max-w-5xl items-center gap-10 px-6 py-16 md:grid-cols-2">
+      <main className="page-enter min-h-full bg-[#faf9f7]">
+        <SiteNav />
+        <div className="mx-auto grid w-full max-w-5xl items-center gap-10 px-6 py-16 md:grid-cols-2">
         <div>
           <p className="text-xs tracking-[0.28em] text-neutral-400">SYNCLINK</p>
           <h1 className="mt-3 text-4xl font-medium tracking-tight">Studio</h1>
@@ -302,12 +305,15 @@ export default function DashboardPage() {
         <div className="img-hover overflow-hidden rounded-3xl border border-neutral-200/80">
           <Image src="/stations/login.png" alt="" width={1400} height={1750} className="h-auto w-full object-cover" priority />
         </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="page-enter mx-auto grid min-h-full w-full max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
+    <main className="page-enter min-h-full bg-[#faf9f7]">
+      <SiteNav />
+      <div className="mx-auto grid w-full max-w-6xl gap-8 px-6 py-12 lg:grid-cols-[minmax(0,1fr)_360px]">
       <section className="space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div>
@@ -469,6 +475,7 @@ export default function DashboardPage() {
           </CardHeader>
         </Card>
       </aside>
+      </div>
     </main>
   );
 }

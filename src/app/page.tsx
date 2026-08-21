@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SiteNav } from "@/components/site-nav";
 import { synclink, type PlatformSettings } from "@/lib/api";
 
 const stations = [
@@ -39,7 +40,6 @@ function HeroImage({ src, alt }: { src: string; alt: string }) {
 
 export default async function Home() {
   const settings = await loadSettings();
-  const name = settings.siteName || "SYNCLINK";
   const title = settings.heroTitle || "One page.\nEvery link.";
   const subtitle = settings.heroSubtitle || settings.tagline || "A quieter public page. White space, type, and a few stills. Edit from the dashboard.";
   const cta = settings.heroCta || "Create your page";
@@ -50,14 +50,7 @@ export default async function Home() {
 
   return (
     <main className="page-enter min-h-full bg-[#faf9f7]">
-      <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-6">
-        <p className="text-sm font-medium tracking-[0.22em]">{name.toUpperCase()}</p>
-        <div className="flex gap-2">
-          <Link href="/about" className={buttonVariants({ variant: "ghost" })}>About</Link>
-          <Link href="/admin" className={buttonVariants({ variant: "ghost" })}>Admin</Link>
-          <Link href="/dashboard" className={buttonVariants({ variant: "outline" })}>Dashboard</Link>
-        </div>
-      </header>
+      <SiteNav settings={settings} />
 
       <section className="mx-auto grid w-full max-w-5xl items-center gap-12 px-6 pb-16 pt-4 md:grid-cols-2 md:pb-24">
         <div className="space-y-6">

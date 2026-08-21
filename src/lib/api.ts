@@ -100,6 +100,11 @@ export type AdminUser = {
   createdAt: string;
 };
 
+export type NavItem = {
+  label: string;
+  href: string;
+};
+
 export type PlatformSettings = {
   siteName: string;
   tagline: string;
@@ -118,6 +123,7 @@ export type PlatformSettings = {
   heroCtaHref: string;
   heroImage: string;
   demoSlug: string;
+  nav: NavItem[];
 };
 
 export type LoginResponse = {

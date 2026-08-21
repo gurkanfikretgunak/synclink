@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { SiteNav } from "@/components/site-nav";
 import { synclink } from "@/lib/api";
 
 const bgClass: Record<string, string> = {
@@ -39,6 +40,7 @@ export default async function PublicPage({ params }: PageProps<"/[slug]">) {
 
   return (
     <main className={`relative min-h-full overflow-hidden ${tone}`}>
+      <SiteNav variant="slim" tone={dark ? "dark" : "light"} />
       <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col items-center px-6 py-16">
         <div className="img-hover mb-8 overflow-hidden rounded-3xl">
           <Image src="/stations/orbit.png" alt="" width={720} height={480} className="h-28 w-full object-cover opacity-90" />

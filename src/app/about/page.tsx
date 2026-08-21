@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+import { SiteNav } from "@/components/site-nav";
 import { synclink } from "@/lib/api";
 
 export default async function AboutPage() {
@@ -17,10 +16,7 @@ export default async function AboutPage() {
 
   return (
     <main className="min-h-full bg-[#faf9f7]">
-      <header className="mx-auto flex w-full max-w-3xl items-center justify-between px-6 py-6">
-        <p className="text-xs tracking-[0.28em] text-neutral-500">{(settings.siteName || "SYNCLINK").toUpperCase()}</p>
-        <Link href="/" className={buttonVariants({ variant: "ghost", size: "sm" })}>Home</Link>
-      </header>
+      <SiteNav settings={settings} />
       <article className="mx-auto w-full max-w-3xl space-y-6 px-6 pb-20">
         <p className="text-xs tracking-[0.28em] text-neutral-400">ABOUT</p>
         <h1 className="text-4xl font-medium tracking-tight">{settings.tagline || "One page. Every link."}</h1>

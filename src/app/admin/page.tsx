@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { SiteNav } from "@/components/site-nav";
 import { getToken, synclink, type AdminUser, type Page, type PlatformSettings } from "@/lib/api";
 
 type Tab = "overview" | "users" | "pages" | "settings";
@@ -31,6 +32,12 @@ const emptySettings: PlatformSettings = {
   heroCtaHref: "/dashboard",
   heroImage: "",
   demoSlug: "gurkan",
+  nav: [
+    { label: "Home", href: "/" },
+    { label: "About", href: "/about" },
+    { label: "Dashboard", href: "/dashboard" },
+    { label: "Admin", href: "/admin" },
+  ],
 };
 
 export default function AdminPage() {
@@ -96,26 +103,33 @@ export default function AdminPage() {
 
   if (!token) {
     return (
-      <main className="flex min-h-full flex-col items-center justify-center bg-[#faf9f7] px-6">
-        <p className="mb-4 text-xs tracking-[0.28em] text-neutral-400">ADMIN</p>
-        <p className="mb-6 text-neutral-600">Sign in first. First account is admin.</p>
-        <Button asChild><Link href="/dashboard">Go to studio</Link></Button>
+      <main className="min-h-full bg-[#faf9f7]">
+        <SiteNav />
+        <div className="flex flex-col items-center justify-center px-6 py-20">
+          <p className="mb-4 text-xs tracking-[0.28em] text-neutral-400">ADMIN</p>
+          <p className="mb-6 text-neutral-600">Sign in first. First account is admin.</p>
+          <Button asChild><Link href="/dashboard">Go to studio</Link></Button>
+        </div>
       </main>
     );
   }
 
   if (error && !me) {
     return (
-      <main className="flex min-h-full flex-col items-center justify-center bg-[#faf9f7] px-6">
-        <p className="mb-4 text-xs tracking-[0.28em] text-neutral-400">ADMIN</p>
-        <p className="mb-6 text-neutral-600">{error}</p>
-        <Button asChild variant="outline"><Link href="/dashboard">Back</Link></Button>
+      <main className="min-h-full bg-[#faf9f7]">
+        <SiteNav />
+        <div className="flex flex-col items-center justify-center px-6 py-20">
+          <p className="mb-4 text-xs tracking-[0.28em] text-neutral-400">ADMIN</p>
+          <p className="mb-6 text-neutral-600">{error}</p>
+          <Button asChild variant="outline"><Link href="/dashboard">Back</Link></Button>
+        </div>
       </main>
     );
   }
 
   return (
     <main className="min-h-full bg-[#faf9f7]">
+      <SiteNav settings={settings} />
       <header className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-6">
         <p className="text-xs tracking-[0.28em] text-neutral-500">SYNCLINK ADMIN</p>
         <div className="flex flex-wrap gap-2">
@@ -277,6 +291,25 @@ export default function AdminPage() {
                 <div className="space-y-2"><Label htmlFor="heroCtaHref">Hero CTA href</Label><Input id="heroCtaHref" value={settings.heroCtaHref || ""} onChange={(e) => setSettings({ ...settings, heroCtaHref: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="heroImage">Hero image URL</Label><Input id="heroImage" value={settings.heroImage || ""} onChange={(e) => setSettings({ ...settings, heroImage: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="demoSlug">Demo slug</Label><Input id="demoSlug" value={settings.demoSlug || ""} onChange={(e) => setSettings({ ...settings, demoSlug: e.target.value })} /></div>
+                <div className="space-y-2">
+                  <Label>Top nav</Label>
+                  {(settings.nav || []).map((item, index) => (
+                    <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_auto]">
+                      <Input placeholder="Label" value={item.label} onChange={(e) => {
+                        const nav = [...(settings.nav || [])];
+                        nav[index] = { ...nav[index], label: e.target.value };
+                        setSettings({ ...settings, nav });
+                      }} />
+                      <Input placeholder="/path" value={item.href} onChange={(e) => {
+                        const nav = [...(settings.nav || [])];
+                        nav[index] = { ...nav[index], href: e.target.value };
+                        setSettings({ ...settings, nav });
+                      }} />
+                      <Button type="button" variant="ghost" onClick={() => setSettings({ ...settings, nav: (settings.nav || []).filter((_, i) => i !== index) })}>Remove</Button>
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" onClick={() => setSettings({ ...settings, nav: [...(settings.nav || []), { label: "", href: "" }] })}>Add nav link</Button>
+                </div>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.signupEnabled} onChange={(e) => setSettings({ ...settings, signupEnabled: e.target.checked })} /> Signup enabled</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={settings.maintenance} onChange={(e) => setSettings({ ...settings, maintenance: e.target.checked })} /> Maintenance</label>
                 <Button type="submit">Save settings</Button>

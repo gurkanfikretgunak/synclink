@@ -3,9 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.6.1] - 2026-08-22
 
 ### Added
-- public/admin settings now include heroCtaHref and nav [{label,href}].
+- Shared top nav from public settings (`nav: [{label,href}]`) on `/`, `/about`, `/dashboard`, `/admin`, `/reset`. Slim bar on `/{slug}`. Fallback Home / About / Dashboard / Admin until API ships nav.
+- Admin settings can edit those nav links.
 
 ## [0.6.0] - 2026-08-22
 
