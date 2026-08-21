@@ -1,2 +1,4 @@
-# synclink
-SyncLink — Linktree-style pages. Next.js app + masterfabric-go API.
+# SyncLink
+
+Text-first pages. Next.js + masterfabric-go.
+Client: src/lib/api.ts. Public: /{slug}. Dashboard is step B.
