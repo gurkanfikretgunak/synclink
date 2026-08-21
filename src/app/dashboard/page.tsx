@@ -52,6 +52,12 @@ function draftFrom(email: string): Page {
   return { ...emptyPage, slug, displayName: slug };
 }
 
+const ZERO_ID = "00000000-0000-0000-0000-000000000000";
+
+function isLivePage(value: Page | null | undefined): value is Page {
+  return Boolean(value && value.slug && value.id && value.id !== ZERO_ID);
+}
+
 export default function DashboardPage() {
   const [token, setTok] = useState<string | null>(null);
   const [gate, setGate] = useState<Gate>("login");
@@ -69,13 +75,13 @@ export default function DashboardPage() {
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
 
-  const saved = Boolean(page.id);
+  const saved = isLivePage(page);
   const canOpen = saved && Boolean(page.slug);
 
   async function boot(next: string, fallbackEmail = "") {
     setError("");
     const [mine, items] = await Promise.all([synclink.getMyPage(next), synclink.listLinks(next)]);
-    if (mine && mine.id) {
+    if (isLivePage(mine)) {
       setPage({
         ...emptyPage,
         ...mine,
