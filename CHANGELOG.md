@@ -24,3 +24,5 @@ All notable changes to SyncLink live in this file.
 
 ### Added
 - Live URLs: app https://synclink-mocha.vercel.app , API https://synclink-api.onrender.com
+
+- Password: PUT /api/v1/me/password, POST /api/v1/auth/forgot-password, POST /api/v1/auth/reset-password.

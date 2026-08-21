@@ -27,6 +27,7 @@ type Service struct {
 	mu     sync.Mutex
 	users  map[string]*User
 	byID   map[uuid.UUID]*User
+	reset  map[string]resetEntry
 	secret []byte
 }
 

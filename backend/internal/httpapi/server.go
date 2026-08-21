@@ -19,7 +19,7 @@ type ctxKey int
 const userKey ctxKey = 1
 
 type Server struct {
-	auth *auth.Service
+	auth  *auth.Service
 	pages *page.Service
 }
 
@@ -38,10 +38,13 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/register", s.register)
 		r.Post("/auth/login", s.login)
+		r.Post("/auth/forgot-password", s.forgotPassword)
+		r.Post("/auth/reset-password", s.resetPassword)
 		r.Get("/public/pages/{slug}", s.publicPage)
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwt)
 			r.Get("/me", s.me)
+			r.Put("/me/password", s.changePassword)
 			r.Get("/me/page", s.getPage)
 			r.Put("/me/page", s.upsertPage)
 			r.Get("/me/page/links", s.listLinks)
@@ -67,6 +70,8 @@ func writeErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, page.ErrConflict), errors.Is(err, auth.ErrExists):
 		writeJSON(w, 409, map[string]any{"error": "Conflict", "message": err.Error(), "code": 409})
 	case errors.Is(err, page.ErrValidation):
+		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
+	case errors.Is(err, auth.ErrWeakPassword):
 		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
 	case errors.Is(err, auth.ErrInvalidCreds), errors.Is(err, page.ErrUnauthorized):
 		writeJSON(w, 401, map[string]any{"error": "Unauthorized", "message": err.Error(), "code": 401})

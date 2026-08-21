@@ -14,3 +14,5 @@ Routes: /health/live, /api/v1/auth/register, /api/v1/auth/login, /api/v1/public/
 
 Docker: docker build -t synclink-api . && docker run -p 8080:8080 -e JWT_SECRET=dev-secret synclink-api
 Render: ../render.yaml (rootDir backend, Frankfurt).
+
+Password: PUT /me/password, POST /auth/forgot-password, POST /auth/reset-password (demo resetToken in forgot response).
