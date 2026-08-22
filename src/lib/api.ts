@@ -186,10 +186,10 @@ export const synclink = {
     return request<PublicPage>(`/api/v1/public/pages/${encodeURIComponent(slug)}`);
   },
   recordClick(slug: string, id: string) {
-    return request<{ ok: boolean }>(
+    return request<{ ok: boolean; clicks: number }>(
       `/api/v1/public/pages/${encodeURIComponent(slug)}/links/${encodeURIComponent(id)}/click`,
       { method: "POST" },
-    ).catch(() => ({ ok: false }));
+    );
   },
   login(email: string, password: string) {
     return request<LoginResponse>("/api/v1/auth/login", {

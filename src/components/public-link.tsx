@@ -1,6 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
+import { useState } from "react";
 import { synclink, type PublicLink } from "@/lib/api";
 
 export function PublicLinkButton({
@@ -14,6 +15,8 @@ export function PublicLinkButton({
   className?: string;
   style?: CSSProperties;
 }) {
+  const [clicks, setClicks] = useState(link.clicks ?? 0);
+
   return (
     <a
       href={link.url}
@@ -22,13 +25,13 @@ export function PublicLinkButton({
       className={className}
       style={style}
       onClick={() => {
-        void synclink.recordClick(slug, link.id);
+        void synclink.recordClick(slug, link.id).then((res) => {
+          if (typeof res.clicks === "number") setClicks(res.clicks);
+        });
       }}
     >
       <span>{link.title}</span>
-      {typeof link.clicks === "number" ? (
-        <span className="ml-2 text-[10px] tracking-[0.16em] opacity-50">{link.clicks}</span>
-      ) : null}
+      <span className="ml-2 text-[10px] tracking-[0.16em] opacity-50">{clicks}</span>
     </a>
   );
 }
