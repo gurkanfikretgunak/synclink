@@ -32,3 +32,5 @@ SQLite via SYNCLINK_DB. See CHANGELOG.md and backend/README.md.
 
 
 Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields come from public settings.
+
+Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.

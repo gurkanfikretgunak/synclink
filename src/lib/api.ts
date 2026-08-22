@@ -128,6 +128,17 @@ export type PlatformSettings = {
   nav: NavItem[];
 };
 
+export type MeStats = {
+  totalClicks: number;
+  links: { id: string; title?: string; clicks: number }[];
+};
+
+export type AdminStats = {
+  users: number;
+  pages: number;
+  totalClicks?: number;
+};
+
 export type LoginResponse = {
   token: string;
   user: {
@@ -270,8 +281,13 @@ export const synclink = {
   adminMe(token: string) {
     return request<AdminUser>("/api/v1/admin/me", { token });
   },
+  meStats(token: string) {
+    return request<MeStats | null>("/api/v1/me/stats", { token, allow404: true }).then(
+      (data) => data || { totalClicks: 0, links: [] },
+    );
+  },
   adminStats(token: string) {
-    return request<{ users: number; pages: number }>("/api/v1/admin/stats", { token });
+    return request<AdminStats>("/api/v1/admin/stats", { token });
   },
   adminUsers(token: string) {
     return request<AdminUser[]>("/api/v1/admin/users", { token });

@@ -46,7 +46,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [me, setMe] = useState<AdminUser | null>(null);
-  const [stats, setStats] = useState<{ users: number; pages: number } | null>(null);
+  const [stats, setStats] = useState<{ users: number; pages: number; totalClicks?: number } | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [settings, setSettings] = useState<PlatformSettings>(emptySettings);
@@ -147,7 +147,7 @@ export default function AdminPage() {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         {tab === "overview" ? (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Card className="border-neutral-200/80 bg-white shadow-none">
               <CardHeader>
                 <CardTitle className="font-medium">Users</CardTitle>
@@ -161,6 +161,13 @@ export default function AdminPage() {
                 <CardDescription>Public SyncLink pages</CardDescription>
               </CardHeader>
               <CardContent className="text-4xl">{stats?.pages ?? 0}</CardContent>
+            </Card>
+            <Card className="border-neutral-200/80 bg-white shadow-none">
+              <CardHeader>
+                <CardTitle className="font-medium">Clicks</CardTitle>
+                <CardDescription>All public taps</CardDescription>
+              </CardHeader>
+              <CardContent className="text-4xl">{stats?.totalClicks ?? 0}</CardContent>
             </Card>
           </div>
         ) : null}

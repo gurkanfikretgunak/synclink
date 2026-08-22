@@ -73,6 +73,7 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState<Page>(emptyPage);
   const [links, setLinks] = useState<LinkItem[]>([]);
+  const [totalClicks, setTotalClicks] = useState(0);
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -81,7 +82,13 @@ export default function DashboardPage() {
 
   async function boot(next: string, fallbackEmail = "") {
     setError("");
-    const [mine, items] = await Promise.all([synclink.getMyPage(next), synclink.listLinks(next)]);
+    const [mine, items, stats] = await Promise.all([
+      synclink.getMyPage(next),
+      synclink.listLinks(next),
+      synclink.meStats(next).catch(() => ({ totalClicks: 0, links: [] as { id: string; clicks: number }[] })),
+    ]);
+    const clicksById = Object.fromEntries((stats.links || []).map((row) => [row.id, row.clicks]));
+    setTotalClicks(stats.totalClicks || items.reduce((sum, item) => sum + (item.clicks || clicksById[item.id] || 0), 0));
     if (isLivePage(mine)) {
       setPage({
         ...emptyPage,
@@ -91,7 +98,7 @@ export default function DashboardPage() {
         background: mine.background || "cream",
         motion: mine.motion || "subtle",
       });
-      setLinks(items);
+      setLinks(items.map((item) => ({ ...item, clicks: item.clicks ?? clicksById[item.id] })));
       return;
     }
     setPage(draftFrom(fallbackEmail || email));
@@ -319,7 +326,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-xs tracking-[0.28em] text-neutral-400">DASHBOARD</p>
             <h1 className="mt-2 text-3xl font-medium tracking-tight">Studio</h1>
-            <p className="mt-1 text-sm text-neutral-500">{saved ? `Saved · /${page.slug}` : "Unsaved draft"}</p>
+            <p className="mt-1 text-sm text-neutral-500">{saved ? `Saved · /${page.slug} · ${totalClicks} clicks` : "Unsaved draft"}</p>
           </div>
           <div className="flex gap-2">
             {canOpen ? <Link href={`/${page.slug}`} className="text-sm underline">Open live</Link> : null}

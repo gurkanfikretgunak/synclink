@@ -3,6 +3,12 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.8.0] - 2026-08-22
+
+### Added
+- Studio shows total clicks from GET /api/v1/me/stats (0 if the route is missing). Per-link counts merge onto the preview.
+- Admin overview has a Clicks card from GET /api/v1/admin/stats `totalClicks`.
+
 
 ## [0.7.0] - 2026-08-22
 
