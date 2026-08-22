@@ -1,35 +1,52 @@
+-- SQLite schema applied by store.Migrate (modernc.org/sqlite).
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    status TEXT NOT NULL,
+    created_at TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS synclink_pages (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    slug VARCHAR(64) NOT NULL UNIQUE,
-    display_name VARCHAR(80) NOT NULL,
-    bio VARCHAR(280) NOT NULL DEFAULT '',
+CREATE TABLE IF NOT EXISTS pages (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL UNIQUE,
+    slug TEXT NOT NULL UNIQUE,
+    display_name TEXT NOT NULL,
+    bio TEXT NOT NULL DEFAULT '',
     avatar_url TEXT,
-    theme VARCHAR(32) NOT NULL DEFAULT 'default'
-        CHECK (theme IN ('default', 'dark', 'light', 'colorful')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    theme TEXT NOT NULL DEFAULT 'default',
+    avatar_shape TEXT NOT NULL DEFAULT 'circle',
+    accent_color TEXT NOT NULL DEFAULT '#111111',
+    background TEXT NOT NULL DEFAULT 'cream',
+    motion TEXT NOT NULL DEFAULT 'subtle',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_synclink_pages_slug ON synclink_pages(slug);
-
-CREATE TABLE IF NOT EXISTS synclink_links (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    page_id UUID NOT NULL REFERENCES synclink_pages(id) ON DELETE CASCADE,
-    title VARCHAR(80) NOT NULL,
+CREATE TABLE IF NOT EXISTS links (
+    id TEXT PRIMARY KEY,
+    page_id TEXT NOT NULL,
+    title TEXT NOT NULL,
     url TEXT NOT NULL,
     icon TEXT,
-    sort_order INT NOT NULL DEFAULT 0,
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    active INTEGER NOT NULL DEFAULT 1,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
 );
 
-CREATE INDEX IF NOT EXISTS idx_synclink_links_page_order ON synclink_links(page_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_links_page_order ON links(page_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    payload TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    token TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expires_at TEXT NOT NULL
+);

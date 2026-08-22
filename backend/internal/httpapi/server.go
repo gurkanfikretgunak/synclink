@@ -41,6 +41,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 		r.Post("/auth/forgot-password", s.forgotPassword)
 		r.Post("/auth/reset-password", s.resetPassword)
 		r.Get("/public/pages/{slug}", s.publicPage)
+		r.Post("/public/pages/{slug}/links/{id}/click", s.publicClick)
 		r.Get("/public/settings", s.publicSettings)
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwt)
@@ -277,4 +278,18 @@ func (s *Server) reorder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, links)
+}
+
+func (s *Server) publicClick(w http.ResponseWriter, r *http.Request) {
+	lid, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, 404, map[string]any{"error": "Not Found", "message": "not found", "code": 404})
+		return
+	}
+	n, err := s.pages.RecordClick(r.Context(), chi.URLParam(r, "slug"), lid)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 200, map[string]any{"ok": true, "clicks": n})
 }

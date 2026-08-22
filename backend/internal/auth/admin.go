@@ -33,8 +33,12 @@ func (u *User) Info() UserInfo {
 func (s *Service) ListUsers(ctx context.Context) []UserInfo {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	out := make([]UserInfo, 0, len(s.byID))
-	for _, u := range s.byID {
+	users, err := s.store.ListUsers(ctx)
+	if err != nil {
+		return []UserInfo{}
+	}
+	out := make([]UserInfo, 0, len(users))
+	for _, u := range users {
 		out = append(out, u.Info())
 	}
 	return out
@@ -43,15 +47,15 @@ func (s *Service) ListUsers(ctx context.Context) []UserInfo {
 func (s *Service) IsAdmin(id uuid.UUID) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	u, ok := s.byID[id]
-	return ok && u.Role == RoleAdmin && u.Status == StatusActive
+	u, err := s.store.GetUserByID(context.Background(), id)
+	return err == nil && u.Role == RoleAdmin && u.Status == StatusActive
 }
 
 func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, role, status *string) (*UserInfo, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	u, ok := s.byID[id]
-	if !ok {
+	u, err := s.store.GetUserByID(ctx, id)
+	if err != nil {
 		return nil, ErrInvalidCreds
 	}
 	if role != nil {
@@ -68,6 +72,9 @@ func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, role, status *st
 		}
 		u.Status = st
 	}
+	if err := s.store.UpdateUser(ctx, u); err != nil {
+		return nil, err
+	}
 	info := u.Info()
 	return &info, nil
 }
@@ -75,12 +82,9 @@ func (s *Service) UpdateUser(ctx context.Context, id uuid.UUID, role, status *st
 func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	u, ok := s.byID[id]
-	if !ok {
+	if err := s.store.DeleteUser(ctx, id); err != nil {
 		return ErrInvalidCreds
 	}
-	delete(s.byID, id)
-	delete(s.users, u.Email)
 	return nil
 }
 
@@ -149,7 +153,11 @@ type Settings struct {
 func (s *Service) Settings() Settings {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.settings
+	st, err := s.store.GetSettings(context.Background())
+	if err != nil {
+		return DefaultSettings()
+	}
+	return st
 }
 
 func (s *Service) PublicSettings() map[string]any {
@@ -179,39 +187,44 @@ func (s *Service) PublicSettings() map[string]any {
 func (s *Service) UpdateSettings(in Settings) Settings {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if strings.TrimSpace(in.SiteName) != "" {
-		s.settings.SiteName = strings.TrimSpace(in.SiteName)
+	st, err := s.store.GetSettings(context.Background())
+	if err != nil {
+		st = DefaultSettings()
 	}
-	s.settings.Tagline = strings.TrimSpace(in.Tagline)
-	s.settings.About = strings.TrimSpace(in.About)
-	s.settings.SupportEmail = strings.TrimSpace(in.SupportEmail)
-	s.settings.SignupEnabled = in.SignupEnabled
-	s.settings.Maintenance = in.Maintenance
-	s.settings.MetaTitle = strings.TrimSpace(in.MetaTitle)
-	s.settings.MetaDescription = strings.TrimSpace(in.MetaDescription)
-	s.settings.OgImage = strings.TrimSpace(in.OgImage)
-	s.settings.Favicon = strings.TrimSpace(in.Favicon)
-	s.settings.ThemeColor = strings.TrimSpace(in.ThemeColor)
+	if strings.TrimSpace(in.SiteName) != "" {
+		st.SiteName = strings.TrimSpace(in.SiteName)
+	}
+	st.Tagline = strings.TrimSpace(in.Tagline)
+	st.About = strings.TrimSpace(in.About)
+	st.SupportEmail = strings.TrimSpace(in.SupportEmail)
+	st.SignupEnabled = in.SignupEnabled
+	st.Maintenance = in.Maintenance
+	st.MetaTitle = strings.TrimSpace(in.MetaTitle)
+	st.MetaDescription = strings.TrimSpace(in.MetaDescription)
+	st.OgImage = strings.TrimSpace(in.OgImage)
+	st.Favicon = strings.TrimSpace(in.Favicon)
+	st.ThemeColor = strings.TrimSpace(in.ThemeColor)
 	if v := strings.TrimSpace(in.HeroTitle); v != "" {
-		s.settings.HeroTitle = v
+		st.HeroTitle = v
 	}
 	if v := strings.TrimSpace(in.HeroSubtitle); v != "" {
-		s.settings.HeroSubtitle = v
+		st.HeroSubtitle = v
 	}
 	if v := strings.TrimSpace(in.HeroCta); v != "" {
-		s.settings.HeroCta = v
+		st.HeroCta = v
 	}
 	if v := strings.TrimSpace(in.HeroImage); v != "" {
-		s.settings.HeroImage = v
+		st.HeroImage = v
 	}
 	if v := strings.TrimSpace(in.DemoSlug); v != "" {
-		s.settings.DemoSlug = v
+		st.DemoSlug = v
 	}
 	if v := strings.TrimSpace(in.HeroCtaHref); v != "" {
-		s.settings.HeroCtaHref = v
+		st.HeroCtaHref = v
 	}
 	if nav := trimNav(in.Nav); len(nav) > 0 {
-		s.settings.Nav = nav
+		st.Nav = nav
 	}
-	return s.settings
+	_ = s.store.PutSettings(context.Background(), st)
+	return st
 }

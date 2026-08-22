@@ -49,7 +49,7 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 		if !l.Active {
 			continue
 		}
-		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order})
+		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order, Clicks: l.Clicks})
 	}
 	return &PublicPage{
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
@@ -276,4 +276,16 @@ func (s *Service) ListAll(ctx context.Context) ([]PageDTO, error) {
 		out = append(out, ToPageDTO(p))
 	}
 	return out, nil
+}
+
+func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID) (int, error) {
+	normalized, err := normalizeSlug(slug)
+	if err != nil {
+		return 0, ErrNotFound
+	}
+	p, err := s.store.GetPageBySlug(ctx, normalized)
+	if err != nil {
+		return 0, ErrNotFound
+	}
+	return s.store.IncrementClicks(ctx, p.ID, linkID)
 }

@@ -172,3 +172,15 @@ func (m *MemoryStore) Reorder(ctx context.Context, pageID uuid.UUID, ids []uuid.
 	}
 	return nil
 }
+
+func (m *MemoryStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	l, ok := m.links[linkID]
+	if !ok || l.PageID != pageID || !l.Active {
+		return 0, ErrNotFound
+	}
+	l.Clicks++
+	l.UpdatedAt = time.Now().UTC()
+	return l.Clicks, nil
+}

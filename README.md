@@ -15,7 +15,7 @@ One public URL per person (/{slug}). Circle avatar, accent color, background, an
 
 ![Orbit](public/stations/orbit.png)
 
-Sign in or sign up on /dashboard. After a Render wipe the API seeds admins and a demo /gurkan page. Later signups stay user.
+Sign in or sign up on /dashboard. The Go API stores users, pages, links, and settings in SQLite (SYNCLINK_DB, default ./data/synclink.db). Seed admins and /gurkan only when the DB is empty. Later signups stay user.
 
 ![Login](public/stations/login.png)
 
@@ -28,7 +28,7 @@ Page GET/PUT /api/v1/me/page and GET /api/v1/public/pages/{slug} now include ava
 Admin GET/PUT /api/v1/admin/settings and GET /api/v1/public/settings add metaTitle, metaDescription, ogImage, favicon, themeColor plus home copy: heroTitle, heroSubtitle, heroCta, heroCtaHref, heroImage, demoSlug, nav [{label,href}]. GET /api/v1/me/page and /me/page/links return 200 empty when unsaved.
 
 Local: cd backend && go test ./... && go run ./cmd/server
-In-memory store. Render free tier sleeps and wipes data. See CHANGELOG.md and backend/README.md.
+SQLite via SYNCLINK_DB. See CHANGELOG.md and backend/README.md.
 
 
 Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields come from public settings.

@@ -23,6 +23,7 @@ type LinkStore interface {
 	ListLinks(ctx context.Context, pageID uuid.UUID) ([]*Link, error)
 	MaxOrder(ctx context.Context, pageID uuid.UUID) (int, error)
 	Reorder(ctx context.Context, pageID uuid.UUID, ids []uuid.UUID) error
+	IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error)
 }
 
 type Store interface {

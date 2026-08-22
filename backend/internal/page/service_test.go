@@ -106,3 +106,110 @@ func TestSeedDemoIfEmpty(t *testing.T) {
 		t.Fatalf("second seed should no-op, got %d pages", len(pages))
 	}
 }
+
+func TestRecordClick(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	on, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "On", URL: "https://a.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	off := false
+	hidden, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "Off", URL: "https://b.com", Active: &off})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := svc.RecordClick(ctx, "gurkan", on.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("first click n=%d err=%v", n, err)
+	}
+	n, err = svc.RecordClick(ctx, "gurkan", on.ID)
+	if err != nil || n != 2 {
+		t.Fatalf("second click n=%d err=%v", n, err)
+	}
+	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("inactive should 404, got %v", err)
+	}
+	if _, err := svc.RecordClick(ctx, "missing", on.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing page should 404, got %v", err)
+	}
+	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New()); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing link should 404, got %v", err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "gurkan")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pub.Links) != 1 || pub.Links[0].Clicks != 2 {
+		t.Fatalf("public clicks %#v", pub.Links)
+	}
+	links, err := svc.ListLinks(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got int
+	for _, l := range links {
+		if l.ID == on.ID {
+			got = l.Clicks
+		}
+	}
+	if got != 2 {
+		t.Fatalf("studio clicks %d", got)
+	}
+}
+
+func TestRecordClickIncrementsAnd404(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	on, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "On", URL: "https://a.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	off := false
+	hidden, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "Off", URL: "https://b.com", Active: &off})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := svc.RecordClick(ctx, "gurkan", on.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("first click n=%d err=%v", n, err)
+	}
+	n, err = svc.RecordClick(ctx, "gurkan", on.ID)
+	if err != nil || n != 2 {
+		t.Fatalf("second click n=%d err=%v", n, err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "gurkan")
+	if err != nil || len(pub.Links) != 1 || pub.Links[0].Clicks != 2 {
+		t.Fatalf("public clicks %#v err=%v", pub, err)
+	}
+	links, err := svc.ListLinks(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got int
+	for _, l := range links {
+		if l.ID == on.ID {
+			got = l.Clicks
+		}
+	}
+	if got != 2 {
+		t.Fatalf("studio clicks %d", got)
+	}
+	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("inactive: %v", err)
+	}
+	if _, err := svc.RecordClick(ctx, "missing", on.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing page: %v", err)
+	}
+	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New()); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing link: %v", err)
+	}
+}

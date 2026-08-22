@@ -17,10 +17,11 @@ RUN apk add --no-cache ca-certificates \
 
 WORKDIR /app
 COPY --from=builder /bin/synclink /app/synclink
-RUN chown appuser:appgroup /app/synclink
+RUN mkdir -p /var/data && chown -R appuser:appgroup /app /var/data
 
 USER appuser
 EXPOSE 8080
 ENV ADDR=:8080
+ENV SYNCLINK_DB=/var/data/synclink.db
 
 ENTRYPOINT ["/app/synclink"]

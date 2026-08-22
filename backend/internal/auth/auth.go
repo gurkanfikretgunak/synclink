@@ -18,6 +18,7 @@ var (
 	ErrValidation   = errors.New("validation")
 	ErrDisabled     = errors.New("account disabled")
 	ErrSignupClosed = errors.New("signup closed")
+	ErrNotFound     = errors.New("not found")
 )
 
 type User struct {
@@ -30,42 +31,23 @@ type User struct {
 }
 
 type Service struct {
-	mu       sync.Mutex
-	users    map[string]*User
-	byID     map[uuid.UUID]*User
-	reset    map[string]resetEntry
-	secret   []byte
-	settings Settings
+	mu     sync.Mutex
+	store  Store
+	secret []byte
 }
 
 func NewService() *Service {
+	return NewServiceWithStore(NewMemoryStore())
+}
+
+func NewServiceWithStore(store Store) *Service {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
 		secret = "dev-secret"
 	}
 	return &Service{
-		users:  map[string]*User{},
-		byID:   map[uuid.UUID]*User{},
-		reset:  map[string]resetEntry{},
+		store:  store,
 		secret: []byte(secret),
-		settings: Settings{
-			SiteName:        "SyncLink",
-			Tagline:         "Your links, one page.",
-			About:           "SyncLink is a text-first page for people and brands.",
-			SupportEmail:    "hello@synclink.app",
-			SignupEnabled:   true,
-			Maintenance:     false,
-			MetaTitle:       "SyncLink",
-			MetaDescription: "Your links, one page.",
-			ThemeColor:      "#111111",
-			HeroTitle:       "One page. Every link.",
-			HeroSubtitle:    "A quieter public page. White space, type, and a few stills. Edit from the dashboard.",
-			HeroCta:         "Create your page",
-			HeroCtaHref:     "/dashboard",
-			HeroImage:       "/stations/hero.png",
-			DemoSlug:        "gurkan",
-			Nav:             defaultNav(),
-		},
 	}
 }
 
@@ -78,23 +60,34 @@ type Claims struct {
 func (s *Service) Register(ctx context.Context, email, password string) (*User, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if !s.settings.SignupEnabled && len(s.users) > 0 {
+	n, err := s.store.UserCount(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	st, err := s.store.GetSettings(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	if !st.SignupEnabled && n > 0 {
 		return nil, "", ErrSignupClosed
 	}
-	if _, ok := s.users[email]; ok {
+	if _, err := s.store.GetUserByEmail(ctx, email); err == nil {
 		return nil, "", ErrExists
+	} else if !errors.Is(err, ErrNotFound) {
+		return nil, "", err
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, "", err
 	}
 	role := RoleUser
-	if len(s.users) == 0 {
+	if n == 0 {
 		role = RoleAdmin
 	}
 	u := &User{ID: uuid.New(), Email: email, PasswordHash: string(hash), Role: role, Status: StatusActive, CreatedAt: time.Now().UTC()}
-	s.users[email] = u
-	s.byID[u.ID] = u
+	if err := s.store.CreateUser(ctx, u); err != nil {
+		return nil, "", err
+	}
 	tok, err := s.token(u)
 	return u, tok, err
 }
@@ -102,8 +95,8 @@ func (s *Service) Register(ctx context.Context, email, password string) (*User, 
 func (s *Service) Login(ctx context.Context, email, password string) (*User, string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	u, ok := s.users[email]
-	if !ok {
+	u, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
 		return nil, "", ErrInvalidCreds
 	}
 	if bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) != nil {
@@ -119,8 +112,11 @@ func (s *Service) Login(ctx context.Context, email, password string) (*User, str
 func (s *Service) User(id uuid.UUID) (*User, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	u, ok := s.byID[id]
-	return u, ok
+	u, err := s.store.GetUserByID(context.Background(), id)
+	if err != nil {
+		return nil, false
+	}
+	return u, true
 }
 
 func (s *Service) token(u *User) (string, error) {

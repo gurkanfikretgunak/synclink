@@ -46,6 +46,7 @@ type Link struct {
 	Icon      *string
 	Order     int
 	Active    bool
+	Clicks    int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -72,16 +73,18 @@ type LinkDTO struct {
 	Icon      *string   `json:"icon"`
 	Order     int       `json:"order"`
 	Active    bool      `json:"active"`
+	Clicks    int       `json:"clicks"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type PublicLink struct {
-	ID    uuid.UUID `json:"id"`
-	Title string    `json:"title"`
-	URL   string    `json:"url"`
-	Icon  *string   `json:"icon"`
-	Order int       `json:"order"`
+	ID     uuid.UUID `json:"id"`
+	Title  string    `json:"title"`
+	URL    string    `json:"url"`
+	Icon   *string   `json:"icon"`
+	Order  int       `json:"order"`
+	Clicks int       `json:"clicks"`
 }
 
 type PublicPage struct {
@@ -135,7 +138,7 @@ func ToPageDTO(p *Page) PageDTO {
 func ToLinkDTO(l *Link) LinkDTO {
 	return LinkDTO{
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon,
-		Order: l.Order, Active: l.Active, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
+		Order: l.Order, Active: l.Active, Clicks: l.Clicks, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
 	}
 }
 

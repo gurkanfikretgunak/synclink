@@ -3,6 +3,18 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+
+## [0.7.0] - 2026-08-22
+
+### Added
+- SQLite persistence for the Go API (`modernc.org/sqlite`, no CGO). Path from `SYNCLINK_DB`, default `./data/synclink.db` (parent directory created). Render/Docker: `SYNCLINK_DB=/var/data/synclink.db`.
+- Tables: users, pages, links (`clicks INTEGER NOT NULL DEFAULT 0`), settings (single JSON row), password_reset_tokens.
+- Public `POST /api/v1/public/pages/{slug}/links/{id}/click` (no JWT). Increments clicks on that active link. Response `200 {"ok":true,"clicks":N}` or `404` if the page/link is missing or inactive.
+- `clicks` on `Link`, `LinkDTO`, and public links (memory and SQLite).
+
+### Changed
+- `SeedIfEmpty` / `SeedDemoIfEmpty` run only when users or pages are empty so a restart does not re-seed.
+
 ## [0.6.2] - 2026-08-22
 
 ### Added
