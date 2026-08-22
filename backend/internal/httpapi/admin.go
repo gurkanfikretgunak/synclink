@@ -119,6 +119,15 @@ func (s *Server) adminStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	users := s.auth.ListUsers(r.Context())
-	pages, _ := s.pages.ListAll(r.Context())
-	writeJSON(w, 200, map[string]any{"users": len(users), "pages": len(pages)})
+	pages, err := s.pages.ListAll(r.Context())
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	clicks, err := s.pages.SumClicks(r.Context())
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 200, map[string]any{"users": len(users), "pages": len(pages), "totalClicks": clicks})
 }

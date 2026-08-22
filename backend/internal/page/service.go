@@ -289,3 +289,20 @@ func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID
 	}
 	return s.store.IncrementClicks(ctx, p.ID, linkID)
 }
+
+func (s *Service) MyStats(ctx context.Context, userID uuid.UUID) (*MyStats, error) {
+	links, err := s.ListLinks(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	out := &MyStats{TotalClicks: 0, Links: make([]MyStatsLink, 0, len(links))}
+	for _, l := range links {
+		out.TotalClicks += l.Clicks
+		out.Links = append(out.Links, MyStatsLink{ID: l.ID, Title: l.Title, Clicks: l.Clicks, URL: l.URL})
+	}
+	return out, nil
+}
+
+func (s *Service) SumClicks(ctx context.Context) (int, error) {
+	return s.store.SumClicks(ctx)
+}

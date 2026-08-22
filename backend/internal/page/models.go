@@ -100,6 +100,18 @@ type PublicPage struct {
 	Links       []PublicLink `json:"links"`
 }
 
+type MyStatsLink struct {
+	ID     uuid.UUID `json:"id"`
+	Title  string    `json:"title"`
+	Clicks int       `json:"clicks"`
+	URL    string    `json:"url"`
+}
+
+type MyStats struct {
+	TotalClicks int           `json:"totalClicks"`
+	Links       []MyStatsLink `json:"links"`
+}
+
 type UpsertPageInput struct {
 	Slug        string  `json:"slug"`
 	DisplayName string  `json:"displayName"`

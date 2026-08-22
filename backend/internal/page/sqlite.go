@@ -279,3 +279,15 @@ func (s *SQLiteStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.U
 	}
 	return n, nil
 }
+
+func (s *SQLiteStore) SumClicks(ctx context.Context) (int, error) {
+	var n sql.NullInt64
+	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(clicks), 0) FROM links`).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	if !n.Valid {
+		return 0, nil
+	}
+	return int(n.Int64), nil
+}

@@ -213,3 +213,52 @@ func TestRecordClickIncrementsAnd404(t *testing.T) {
 		t.Fatalf("missing link: %v", err)
 	}
 }
+
+func TestMyStatsEmptyAndAfterRecordClick(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	empty, err := svc.MyStats(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty.TotalClicks != 0 || empty.Links == nil || len(empty.Links) != 0 {
+		t.Fatalf("empty stats %#v", empty)
+	}
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	afterPage, err := svc.MyStats(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if afterPage.TotalClicks != 0 || afterPage.Links == nil || len(afterPage.Links) != 0 {
+		t.Fatalf("page without links %#v", afterPage)
+	}
+	link, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "On", URL: "https://a.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	n, err := svc.RecordClick(ctx, "gurkan", link.ID)
+	if err != nil || n != 1 {
+		t.Fatalf("click n=%d err=%v", n, err)
+	}
+	n, err = svc.RecordClick(ctx, "gurkan", link.ID)
+	if err != nil || n != 2 {
+		t.Fatalf("click2 n=%d err=%v", n, err)
+	}
+	stats, err := svc.MyStats(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.TotalClicks != 2 || len(stats.Links) != 1 {
+		t.Fatalf("stats %#v", stats)
+	}
+	if stats.Links[0].ID != link.ID || stats.Links[0].Title != "On" || stats.Links[0].URL != "https://a.com" || stats.Links[0].Clicks != 2 {
+		t.Fatalf("link row %#v", stats.Links[0])
+	}
+	total, err := svc.SumClicks(ctx)
+	if err != nil || total != 2 {
+		t.Fatalf("admin sum %d err=%v", total, err)
+	}
+}

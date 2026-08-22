@@ -37,3 +37,43 @@ func TestSQLitePersistAndClick(t *testing.T) {
 		t.Fatalf("missing page %v", err)
 	}
 }
+
+func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
+	db, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	svc := NewService(NewSQLiteStore(db))
+	ctx := context.Background()
+	u := uuid.New()
+	empty, err := svc.MyStats(ctx, u)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty.TotalClicks != 0 || empty.Links == nil || len(empty.Links) != 0 {
+		t.Fatalf("empty %#v", empty)
+	}
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	afterPage, err := svc.MyStats(ctx, u)
+	if err != nil || afterPage.TotalClicks != 0 || afterPage.Links == nil || len(afterPage.Links) != 0 {
+		t.Fatalf("page without links %#v err=%v", afterPage, err)
+	}
+	link, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "On", URL: "https://a.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.RecordClick(ctx, "gurkan", link.ID); err != nil {
+		t.Fatal(err)
+	}
+	stats, err := svc.MyStats(ctx, u)
+	if err != nil || stats.TotalClicks != 1 || len(stats.Links) != 1 || stats.Links[0].Clicks != 1 {
+		t.Fatalf("sqlite mystats %#v err=%v", stats, err)
+	}
+	total, err := svc.SumClicks(ctx)
+	if err != nil || total != 1 {
+		t.Fatalf("sqlite sum %d err=%v", total, err)
+	}
+}

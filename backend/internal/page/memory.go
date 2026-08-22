@@ -184,3 +184,13 @@ func (m *MemoryStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.U
 	l.UpdatedAt = time.Now().UTC()
 	return l.Clicks, nil
 }
+
+func (m *MemoryStore) SumClicks(ctx context.Context) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, l := range m.links {
+		n += l.Clicks
+	}
+	return n, nil
+}

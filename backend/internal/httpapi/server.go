@@ -46,6 +46,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwt)
 			r.Get("/me", s.me)
+			r.Get("/me/stats", s.meStats)
 			r.Put("/me/password", s.changePassword)
 			r.Get("/me/page", s.getPage)
 			r.Put("/me/page", s.upsertPage)
@@ -292,4 +293,18 @@ func (s *Server) publicClick(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": true, "clicks": n})
+}
+
+func (s *Server) meStats(w http.ResponseWriter, r *http.Request) {
+	id, ok := userID(r)
+	if !ok {
+		writeJSON(w, 401, map[string]string{"error": "not authenticated"})
+		return
+	}
+	stats, err := s.pages.MyStats(r.Context(), id)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 200, stats)
 }
