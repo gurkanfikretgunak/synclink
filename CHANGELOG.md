@@ -3,6 +3,12 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.6.2] - 2026-08-22
+
+### Added
+- Mobile top nav (shadcn Sheet). Slim public-page nav falls back to Home / Dashboard if settings omit those links.
+- Optional `clicks` on public/studio links. Public taps POST `/api/v1/public/pages/{slug}/links/{id}/click` and ignore a missing route until Go lands counts.
+
 ## [0.6.1] - 2026-08-22
 
 ### Added

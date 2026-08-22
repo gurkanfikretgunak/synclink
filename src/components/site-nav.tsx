@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { synclink, type NavItem, type PlatformSettings } from "@/lib/api";
 
 export const defaultNav: NavItem[] = [
@@ -30,6 +31,7 @@ export function SiteNav({
   settings?: Partial<PlatformSettings>;
 }) {
   const [live, setLive] = useState<Partial<PlatformSettings>>(settings || {});
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (settings?.siteName || settings?.nav) {
@@ -41,7 +43,8 @@ export function SiteNav({
 
   const name = (live.siteName || "SYNCLINK").toUpperCase();
   const items = itemsFrom(live);
-  const shown = variant === "slim" ? items.filter((item) => item.href === "/" || item.href === "/dashboard").slice(0, 2) : items;
+  const slim = items.filter((item) => item.href === "/" || item.href === "/dashboard").slice(0, 2);
+  const shown = variant === "slim" ? (slim.length ? slim : defaultNav.slice(0, 2)) : items;
   const dark = tone === "dark";
 
   return (
@@ -49,7 +52,7 @@ export function SiteNav({
       <Link href="/" className={`text-sm font-medium tracking-[0.22em] ${dark ? "text-white/80" : ""}`}>
         {name}
       </Link>
-      <nav className="flex flex-wrap items-center justify-end gap-1">
+      <nav className="hidden items-center justify-end gap-1 md:flex">
         {shown.map((item) => (
           <Link
             key={`${item.label}-${item.href}`}
@@ -63,6 +66,30 @@ export function SiteNav({
           </Link>
         ))}
       </nav>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button type="button" size="sm" variant="outline" className="md:hidden">
+            Menu
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="bottom" className="gap-2">
+          <SheetHeader>
+            <SheetTitle className="text-left text-sm tracking-[0.22em]">{name}</SheetTitle>
+          </SheetHeader>
+          <div className="grid gap-2 pb-4">
+            {(variant === "slim" ? shown : items).map((item) => (
+              <Link
+                key={`m-${item.label}-${item.href}`}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={buttonVariants({ variant: "outline", className: "w-full" })}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }

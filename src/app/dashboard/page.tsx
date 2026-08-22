@@ -450,7 +450,7 @@ export default function DashboardPage() {
             <p className="mt-3 text-xs leading-5 opacity-70">{page.bio || "Bio appears here."}</p>
             <ul className="mt-4 space-y-2">
               {activeLinks.map((item) => (
-                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.title}</li>
+                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.title}{typeof item.clicks === "number" ? ` · ${item.clicks}` : ""}</li>
               ))}
               {activeLinks.length === 0 ? <li className="text-xs opacity-50">No links yet</li> : null}
             </ul>

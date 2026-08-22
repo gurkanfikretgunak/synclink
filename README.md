@@ -19,7 +19,7 @@ Sign in or sign up on /dashboard. After a Render wipe the API seeds admins and a
 
 ![Login](public/stations/login.png)
 
-Routes: / public home from settings, /{slug} live page, /about, /dashboard editor, /admin meta, /reset password. Top nav is shared and reads `nav` from public settings (Home / About / Dashboard / Admin by default).
+Routes: / public home from settings, /{slug} live page, /about, /dashboard editor, /admin meta, /reset password. Top nav is shared and reads `nav` from public settings (Home / About / Dashboard / Admin by default). On small screens it opens a bottom sheet. Public links send a click ping when that API exists.
 
 ## Look and meta
 
