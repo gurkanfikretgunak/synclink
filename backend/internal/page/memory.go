@@ -34,6 +34,7 @@ func (m *MemoryStore) CreatePage(ctx context.Context, p *Page) error {
 	now := time.Now().UTC()
 	p.CreatedAt, p.UpdatedAt = now, now
 	cp := *p
+	cp.Socials = copySocials(p.Socials)
 	m.pages[p.ID] = &cp
 	m.byUser[p.UserID] = p.ID
 	m.bySlug[p.Slug] = p.ID
@@ -52,6 +53,7 @@ func (m *MemoryStore) UpdatePage(ctx context.Context, p *Page) error {
 	}
 	p.UpdatedAt = time.Now().UTC()
 	cp := *p
+	cp.Socials = copySocials(p.Socials)
 	m.pages[p.ID] = &cp
 	m.bySlug[p.Slug] = p.ID
 	m.byUser[p.UserID] = p.ID
@@ -66,6 +68,7 @@ func (m *MemoryStore) GetPageByID(ctx context.Context, id uuid.UUID) (*Page, err
 		return nil, ErrNotFound
 	}
 	cp := *p
+	cp.Socials = copySocials(p.Socials)
 	return &cp, nil
 }
 
@@ -77,6 +80,7 @@ func (m *MemoryStore) GetPageByUserID(ctx context.Context, userID uuid.UUID) (*P
 		return nil, ErrNotFound
 	}
 	cp := *m.pages[id]
+	cp.Socials = copySocials(cp.Socials)
 	return &cp, nil
 }
 
@@ -88,6 +92,7 @@ func (m *MemoryStore) GetPageBySlug(ctx context.Context, slug string) (*Page, er
 		return nil, ErrNotFound
 	}
 	cp := *m.pages[id]
+	cp.Socials = copySocials(cp.Socials)
 	return &cp, nil
 }
 

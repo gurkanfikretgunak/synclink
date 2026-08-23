@@ -81,6 +81,9 @@ func TestSQLiteSurvivesReopen(t *testing.T) {
 	if err != nil || pub.DisplayName != "Gürkan" || len(pub.Links) != 3 {
 		t.Fatalf("public %#v err=%v", pub, err)
 	}
+	if pub.Socials == nil || len(pub.Socials) != 2 || pub.Socials[0].Network != "github" {
+		t.Fatalf("public socials %#v", pub.Socials)
+	}
 	if auth2.Settings().SiteName != "Persisted" {
 		t.Fatalf("settings after reopen %#v", auth2.Settings())
 	}

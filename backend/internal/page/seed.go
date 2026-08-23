@@ -23,6 +23,10 @@ func (s *Service) SeedDemoIfEmpty(ctx context.Context, userID uuid.UUID) error {
 		AccentColor: "#111111",
 		Background:  "cream",
 		Motion:      "subtle",
+		Socials: []Social{
+			{Network: "github", URL: "https://github.com/gurkanfikretgunak"},
+			{Network: "website", URL: "https://synclink-mocha.vercel.app"},
+		},
 	}); err != nil {
 		return err
 	}

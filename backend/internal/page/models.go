@@ -34,6 +34,7 @@ type Page struct {
 	AccentColor string
 	Background  string
 	Motion      string
+	Socials     []Social
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -63,6 +64,7 @@ type PageDTO struct {
 	AccentColor string    `json:"accentColor"`
 	Background  string    `json:"background"`
 	Motion      string    `json:"motion"`
+	Socials     []Social  `json:"socials"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -100,6 +102,7 @@ type PublicPage struct {
 	AccentColor string       `json:"accentColor"`
 	Background  string       `json:"background"`
 	Motion      string       `json:"motion"`
+	Socials     []Social     `json:"socials"`
 	Links       []PublicLink `json:"links"`
 }
 
@@ -116,15 +119,16 @@ type MyStats struct {
 }
 
 type UpsertPageInput struct {
-	Slug        string  `json:"slug"`
-	DisplayName string  `json:"displayName"`
-	Bio         string  `json:"bio"`
-	AvatarURL   *string `json:"avatarUrl"`
-	Theme       string  `json:"theme"`
-	AvatarShape string  `json:"avatarShape"`
-	AccentColor string  `json:"accentColor"`
-	Background  string  `json:"background"`
-	Motion      string  `json:"motion"`
+	Slug        string   `json:"slug"`
+	DisplayName string   `json:"displayName"`
+	Bio         string   `json:"bio"`
+	AvatarURL   *string  `json:"avatarUrl"`
+	Theme       string   `json:"theme"`
+	AvatarShape string   `json:"avatarShape"`
+	AccentColor string   `json:"accentColor"`
+	Background  string   `json:"background"`
+	Motion      string   `json:"motion"`
+	Socials     []Social `json:"socials"`
 }
 
 type CreateLinkInput struct {
@@ -146,6 +150,7 @@ func ToPageDTO(p *Page) PageDTO {
 		ID: p.ID, Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
+		Socials:   copySocials(p.Socials),
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }

@@ -3,6 +3,7 @@ package page
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"strings"
 	"time"
@@ -29,10 +30,11 @@ func isUniqueErr(err error) bool {
 func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 	var p Page
 	var avatar sql.NullString
+	var socials sql.NullString
 	var created, updated string
 	err := row.Scan(
 		&p.ID, &p.UserID, &p.Slug, &p.DisplayName, &p.Bio, &avatar, &p.Theme,
-		&p.AvatarShape, &p.AccentColor, &p.Background, &p.Motion, &created, &updated,
+		&p.AvatarShape, &p.AccentColor, &p.Background, &p.Motion, &socials, &created, &updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -44,9 +46,29 @@ func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 		v := avatar.String
 		p.AvatarURL = &v
 	}
+	p.Socials = decodeSocials(socials)
 	p.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
 	p.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
 	return &p, nil
+}
+
+func decodeSocials(raw sql.NullString) []Social {
+	if !raw.Valid || strings.TrimSpace(raw.String) == "" || raw.String == "null" {
+		return emptySocials()
+	}
+	var out []Social
+	if err := json.Unmarshal([]byte(raw.String), &out); err != nil {
+		return emptySocials()
+	}
+	return NormalizeSocials(out)
+}
+
+func encodeSocials(in []Social) string {
+	b, err := json.Marshal(NormalizeSocials(in))
+	if err != nil {
+		return "[]"
+	}
+	return string(b)
 }
 
 func (s *SQLiteStore) CreatePage(ctx context.Context, p *Page) error {
@@ -57,10 +79,10 @@ func (s *SQLiteStore) CreatePage(ctx context.Context, p *Page) error {
 		avatar = *p.AvatarURL
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		p.ID.String(), p.UserID.String(), p.Slug, p.DisplayName, p.Bio, avatar, p.Theme,
-		p.AvatarShape, p.AccentColor, p.Background, p.Motion,
+		p.AvatarShape, p.AccentColor, p.Background, p.Motion, encodeSocials(p.Socials),
 		p.CreatedAt.Format(time.RFC3339Nano), p.UpdatedAt.Format(time.RFC3339Nano),
 	)
 	if isUniqueErr(err) {
@@ -76,10 +98,10 @@ func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 		avatar = *p.AvatarURL
 	}
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, updated_at=?, user_id=?
+		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, socials=?, updated_at=?, user_id=?
 		WHERE id=?`,
 		p.Slug, p.DisplayName, p.Bio, avatar, p.Theme, p.AvatarShape, p.AccentColor, p.Background, p.Motion,
-		p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
+		encodeSocials(p.Socials), p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
 	)
 	if err != nil {
 		if isUniqueErr(err) {
@@ -94,7 +116,7 @@ func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 	return nil
 }
 
-const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, created_at, updated_at`
+const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, created_at, updated_at`
 
 func (s *SQLiteStore) GetPageByID(ctx context.Context, id uuid.UUID) (*Page, error) {
 	return scanPage(s.db.QueryRowContext(ctx, `SELECT `+pageCols+` FROM pages WHERE id=?`, id.String()))

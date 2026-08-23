@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS pages (
 	accent_color TEXT NOT NULL DEFAULT '#111111',
 	background TEXT NOT NULL DEFAULT 'cream',
 	motion TEXT NOT NULL DEFAULT 'subtle',
+	socials TEXT NOT NULL DEFAULT '[]',
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
@@ -73,6 +74,9 @@ func Migrate(db *sql.DB) error {
 	if err := ensureLinksLastClickedAt(db); err != nil {
 		return err
 	}
+	if err := ensurePagesSocials(db); err != nil {
+		return err
+	}
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM settings`).Scan(&n); err != nil {
 		return err
@@ -111,5 +115,18 @@ func ensureLinksLastClickedAt(db *sql.DB) error {
 		return err
 	}
 	_, err = db.Exec(`ALTER TABLE links ADD COLUMN last_clicked_at TEXT`)
+	return err
+}
+
+func ensurePagesSocials(db *sql.DB) error {
+	var name string
+	err := db.QueryRow(`SELECT name FROM pragma_table_info('pages') WHERE name='socials'`).Scan(&name)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE pages ADD COLUMN socials TEXT`)
 	return err
 }

@@ -83,3 +83,36 @@ func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
 		t.Fatalf("sqlite sum %d err=%v", total, err)
 	}
 }
+
+func TestSQLiteSocialsPersist(t *testing.T) {
+	db, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	svc := NewService(NewSQLiteStore(db))
+	ctx := context.Background()
+	u := uuid.New()
+	page, err := svc.UpsertPage(ctx, u, UpsertPageInput{
+		Slug: "gurkan", DisplayName: "G",
+		Socials: []Social{
+			{Network: "twitter", URL: "https://x.com/g"},
+			{Network: "email", URL: "mailto:g@example.com"},
+			{Network: "bad", URL: "https://nope.com"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Socials) != 2 || page.Socials[0].Network != "x" {
+		t.Fatalf("sqlite upsert %#v", page.Socials)
+	}
+	got, err := svc.GetPublicPage(ctx, "gurkan")
+	if err != nil || len(got.Socials) != 2 || got.Socials[0].Network != "x" || got.Socials[1].URL != "mailto:g@example.com" {
+		t.Fatalf("sqlite public %#v err=%v", got, err)
+	}
+	mine, err := svc.GetMyPage(ctx, u)
+	if err != nil || mine.Socials == nil || len(mine.Socials) != 2 {
+		t.Fatalf("sqlite me %#v err=%v", mine, err)
+	}
+}

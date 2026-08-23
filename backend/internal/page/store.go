@@ -38,6 +38,7 @@ func (m *MemoryStore) ListPages(ctx context.Context) ([]*Page, error) {
 	out := make([]*Page, 0, len(m.pages))
 	for _, p := range m.pages {
 		cp := *p
+		cp.Socials = copySocials(p.Socials)
 		out = append(out, &cp)
 	}
 	return out, nil

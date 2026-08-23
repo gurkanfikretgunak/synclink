@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS pages (
     accent_color TEXT NOT NULL DEFAULT '#111111',
     background TEXT NOT NULL DEFAULT 'cream',
     motion TEXT NOT NULL DEFAULT 'subtle',
+    socials TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );

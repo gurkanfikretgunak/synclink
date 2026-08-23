@@ -54,7 +54,8 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 	return &PublicPage{
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
-		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion, Links: out,
+		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
+		Socials: copySocials(p.Socials), Links: out,
 	}, nil
 }
 
@@ -71,6 +72,7 @@ func emptyPageDTO() PageDTO {
 		AccentColor: accent,
 		Background:  bg,
 		Motion:      motion,
+		Socials:     emptySocials(),
 	}
 }
 
@@ -100,6 +102,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		return nil, ErrValidation
 	}
 	shape, accent, bg, motion := NormalizeLook(strings.TrimSpace(in.AvatarShape), strings.TrimSpace(in.AccentColor), strings.TrimSpace(in.Background), strings.TrimSpace(in.Motion))
+	socials := NormalizeSocials(in.Socials)
 	bySlug, slugErr := s.store.GetPageBySlug(ctx, slug)
 	if slugErr != nil && !isNotFound(slugErr) {
 		return nil, slugErr
@@ -121,6 +124,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		mine.AccentColor = accent
 		mine.Background = bg
 		mine.Motion = motion
+		mine.Socials = socials
 		if err := s.store.UpdatePage(ctx, mine); err != nil {
 			return nil, err
 		}
@@ -132,6 +136,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		DisplayName: strings.TrimSpace(in.DisplayName),
 		Bio:         strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
 		AvatarShape: shape, AccentColor: accent, Background: bg, Motion: motion,
+		Socials: socials,
 	}
 	if err := s.store.CreatePage(ctx, p); err != nil {
 		return nil, err

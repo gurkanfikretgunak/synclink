@@ -73,6 +73,9 @@ func TestEmptyGetMyPageAndListLinks(t *testing.T) {
 	if got.Theme != ThemeDefault || got.AvatarShape != "circle" || got.AccentColor != "#111111" || got.Background != "cream" || got.Motion != "subtle" {
 		t.Fatalf("expected default look, got %#v", got)
 	}
+	if got.Socials == nil || len(got.Socials) != 0 {
+		t.Fatalf("expected empty socials slice, got %#v", got.Socials)
+	}
 	links, err := svc.ListLinks(ctx, uid)
 	if err != nil {
 		t.Fatal(err)
@@ -95,6 +98,12 @@ func TestSeedDemoIfEmpty(t *testing.T) {
 	}
 	if pub.DisplayName != "Gürkan" || pub.Theme != ThemeDefault || len(pub.Links) != 3 {
 		t.Fatalf("seeded page %#v", pub)
+	}
+	if pub.Socials == nil || len(pub.Socials) != 2 {
+		t.Fatalf("seeded socials %#v", pub.Socials)
+	}
+	if pub.Socials[0].Network != "github" || pub.Socials[1].Network != "website" {
+		t.Fatalf("seeded social networks %#v", pub.Socials)
 	}
 	if err := svc.SeedDemoIfEmpty(ctx, uuid.New()); err != nil {
 		t.Fatal(err)
@@ -282,5 +291,71 @@ func TestMyStatsEmptyAndAfterRecordClick(t *testing.T) {
 	total, err := svc.SumClicks(ctx)
 	if err != nil || total != 2 {
 		t.Fatalf("admin sum %d err=%v", total, err)
+	}
+}
+
+func TestNormalizeAndUpsertSocials(t *testing.T) {
+	got := NormalizeSocials([]Social{
+		{Network: "Twitter", URL: "https://x.com/g"},
+		{Network: "email", URL: "hi@example.com"},
+		{Network: "email", URL: "mailto:other@example.com"},
+		{Network: "github", URL: "ftp://nope.example"},
+		{Network: "myspace", URL: "https://myspace.com/x"},
+		{Network: "website", URL: "not-a-url"},
+		{Network: "instagram", URL: "https://instagram.com/g"},
+	})
+	if len(got) != 4 {
+		t.Fatalf("expected 4 kept, got %#v", got)
+	}
+	if got[0].Network != "x" || got[0].URL != "https://x.com/g" {
+		t.Fatalf("twitter→x %#v", got[0])
+	}
+	if got[1].Network != "email" || got[1].URL != "hi@example.com" {
+		t.Fatalf("plain email %#v", got[1])
+	}
+	if got[2].URL != "mailto:other@example.com" {
+		t.Fatalf("mailto %#v", got[2])
+	}
+	if got[3].Network != "instagram" {
+		t.Fatalf("instagram %#v", got[3])
+	}
+	if n := NormalizeSocials(nil); n == nil || len(n) != 0 {
+		t.Fatalf("nil → [] got %#v", n)
+	}
+	tooMany := make([]Social, 20)
+	for i := range tooMany {
+		tooMany[i] = Social{Network: "website", URL: "https://example.com/" + string(rune('a'+i%26))}
+	}
+	if len(NormalizeSocials(tooMany)) != 12 {
+		t.Fatalf("max 12, got %d", len(NormalizeSocials(tooMany)))
+	}
+
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	page, err := svc.UpsertPage(ctx, u, UpsertPageInput{
+		Slug: "me", DisplayName: "Me",
+		Socials: []Social{
+			{Network: "twitter", URL: "https://x.com/g"},
+			{Network: "nope", URL: "https://nope.com"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Socials == nil || len(page.Socials) != 1 || page.Socials[0].Network != "x" {
+		t.Fatalf("upsert socials %#v", page.Socials)
+	}
+	mine, err := svc.GetMyPage(ctx, u)
+	if err != nil || len(mine.Socials) != 1 || mine.Socials[0].Network != "x" {
+		t.Fatalf("get my page socials %#v err=%v", mine, err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "me")
+	if err != nil || len(pub.Socials) != 1 || pub.Socials[0].Network != "x" {
+		t.Fatalf("public socials %#v err=%v", pub, err)
+	}
+	cleared, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "me", DisplayName: "Me"})
+	if err != nil || cleared.Socials == nil || len(cleared.Socials) != 0 {
+		t.Fatalf("clear socials %#v err=%v", cleared, err)
 	}
 }

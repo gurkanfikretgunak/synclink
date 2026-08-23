@@ -31,3 +31,8 @@ Links also expose lastClickedAt (RFC3339 or null if never clicked); IncrementCli
 
 Studio stats: GET /api/v1/me/stats (JWT) returns totalClicks plus each link id/title/clicks/url. Missing page is 200 {totalClicks:0,links:[]}.
 Admin stats: GET /api/v1/admin/stats includes users, pages, and totalClicks (SumClicks on memory and SQLite).
+
+Socials on GET/PUT /api/v1/me/page and public GET /api/v1/public/pages/{slug}: `socials: [{ "network": "github", "url": "https://github.com/..." }]`. Empty/null stores and returns `[]`.
+Allowed networks (lowercase): instagram, x (twitter normalizes to x), youtube, tiktok, github, linkedin, threads, spotify, website, email.
+URLs must be http(s) except email, which also accepts mailto: or an address like name@host. Invalid items are dropped; at most 12 are kept.
+SQLite column `pages.socials` TEXT (JSON array); existing DBs get ALTER TABLE on migrate.

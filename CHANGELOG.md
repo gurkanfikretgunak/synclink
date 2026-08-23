@@ -7,6 +7,8 @@ All notable changes to SyncLink live in this file.
 
 ### Added
 - Studio + public `/{slug}` social-icon row from `socials: [{ network, url }]`. Saves with the page. Hidden until the API stores the field.
+- API `socials` on `Page`, `PageDTO`, `PublicPage`, and `PUT /me/page` (`[{network,url}]`). Empty/null becomes `[]`. Allowed networks: instagram, x (twitter→x), youtube, tiktok, github, linkedin, threads, spotify, website, email. HTTP(S) URLs; email also `mailto:` or `user@host`. Invalid items dropped; max 12.
+- SQLite `pages.socials` TEXT JSON; ALTER on migrate. GET/PUT `/me/page` and public GET `pages/{slug}` include `socials`. Seed `/gurkan` has github + website.
 
 ## [0.8.1] - 2026-08-23
 
