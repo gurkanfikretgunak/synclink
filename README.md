@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.0: cover, sections, embeds (404-safe until API lands).
+
 0.9.2: public page shows publishedAt when the API sends it.
 
 0.9.1: public + studio QR share (copy URL / PNG). No new API.
