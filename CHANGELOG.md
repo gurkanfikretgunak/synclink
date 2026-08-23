@@ -8,6 +8,11 @@ All notable changes to SyncLink live in this file.
 ### App
 - Studio + public cover (`coverUrl`, `coverKind` image|video), link `section` (max 40), and `embedUrl`. Hidden until API 0.10.0 is live.
 
+### Added
+- Page cover: `coverUrl` (http/https) and `coverKind` (`image`|`video`, default `image` when URL is set) on GET/PUT `/me/page` and public GET `/public/pages/{slug}`.
+- Link `section` (string, max 40) and `embedUrl` (http/https) on create/update and public links. Empty section is ungrouped. Invalid embed URLs drop to null.
+- SQLite `pages.cover_url`, `pages.cover_kind`, `links.section`, `links.embed_url`.
+
 ## [0.9.2] - 2026-08-23
 
 ### App

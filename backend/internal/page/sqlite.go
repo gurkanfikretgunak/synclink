@@ -60,12 +60,13 @@ func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 	var socials sql.NullString
 	var password sql.NullString
 	var published sql.NullString
+	var cover sql.NullString
 	var verified int
 	var created, updated string
 	err := row.Scan(
 		&p.ID, &p.UserID, &p.Slug, &p.DisplayName, &p.Bio, &avatar, &p.Theme,
 		&p.AvatarShape, &p.AccentColor, &p.Background, &p.Motion, &socials,
-		&verified, &password, &published, &created, &updated,
+		&verified, &password, &published, &cover, &p.CoverKind, &created, &updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -84,6 +85,10 @@ func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 		p.PagePassword = &v
 	}
 	p.PublishedAt = parseTimePtr(published)
+	if cover.Valid && cover.String != "" {
+		v := cover.String
+		p.CoverURL = &v
+	}
 	p.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
 	p.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
 	return &p, nil
@@ -119,11 +124,11 @@ func (s *SQLiteStore) CreatePage(ctx context.Context, p *Page) error {
 		verified = 1
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, cover_url, cover_kind, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		p.ID.String(), p.UserID.String(), p.Slug, p.DisplayName, p.Bio, nullableStr(p.AvatarURL), p.Theme,
 		p.AvatarShape, p.AccentColor, p.Background, p.Motion, encodeSocials(p.Socials),
-		verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt),
+		verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt), nullableStr(p.CoverURL), p.CoverKind,
 		p.CreatedAt.Format(time.RFC3339Nano), p.UpdatedAt.Format(time.RFC3339Nano),
 	)
 	if isUniqueErr(err) {
@@ -143,10 +148,10 @@ func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 		verified = 1
 	}
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, socials=?, verified=?, page_password=?, published_at=?, updated_at=?, user_id=?
+		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, socials=?, verified=?, page_password=?, published_at=?, cover_url=?, cover_kind=?, updated_at=?, user_id=?
 		WHERE id=?`,
 		p.Slug, p.DisplayName, p.Bio, nullableStr(p.AvatarURL), p.Theme, p.AvatarShape, p.AccentColor, p.Background, p.Motion,
-		encodeSocials(p.Socials), verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt), p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
+		encodeSocials(p.Socials), verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt), nullableStr(p.CoverURL), p.CoverKind, p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
 	)
 	if err != nil {
 		if isUniqueErr(err) {
@@ -161,7 +166,7 @@ func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 	return nil
 }
 
-const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, created_at, updated_at`
+const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, cover_url, cover_kind, created_at, updated_at`
 
 func (s *SQLiteStore) GetPageByID(ctx context.Context, id uuid.UUID) (*Page, error) {
 	return scanPage(s.db.QueryRowContext(ctx, `SELECT `+pageCols+` FROM pages WHERE id=?`, id.String()))
@@ -201,11 +206,12 @@ func scanLink(row interface{ Scan(dest ...any) error }) (*Link, error) {
 	var thumb sql.NullString
 	var lastClicked sql.NullString
 	var starts, ends sql.NullString
+	var embed sql.NullString
 	var active, featured, sensitive int
 	var created, updated string
 	err := row.Scan(
 		&l.ID, &l.PageID, &l.Title, &l.URL, &icon, &l.Order, &active, &l.Clicks, &lastClicked,
-		&featured, &thumb, &starts, &ends, &sensitive, &created, &updated,
+		&featured, &thumb, &starts, &ends, &sensitive, &l.Section, &embed, &created, &updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -227,6 +233,10 @@ func scanLink(row interface{ Scan(dest ...any) error }) (*Link, error) {
 	l.LastClickedAt = parseTimePtr(lastClicked)
 	l.StartsAt = parseTimePtr(starts)
 	l.EndsAt = parseTimePtr(ends)
+	if embed.Valid && embed.String != "" {
+		v := embed.String
+		l.EmbedURL = &v
+	}
 	l.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
 	l.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
 	return &l, nil
@@ -243,11 +253,11 @@ func (s *SQLiteStore) CreateLink(ctx context.Context, l *Link) error {
 	now := time.Now().UTC()
 	l.CreatedAt, l.UpdatedAt = now, now
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO links (id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, featured, thumbnail_url, starts_at, ends_at, sensitive, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO links (id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, featured, thumbnail_url, starts_at, ends_at, sensitive, section, embed_url, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		l.ID.String(), l.PageID.String(), l.Title, l.URL, nullableStr(l.Icon), l.Order, boolInt(l.Active), l.Clicks,
 		nullableTime(l.LastClickedAt), boolInt(l.Featured), nullableStr(l.ThumbnailURL),
-		nullableTime(l.StartsAt), nullableTime(l.EndsAt), boolInt(l.Sensitive),
+		nullableTime(l.StartsAt), nullableTime(l.EndsAt), boolInt(l.Sensitive), l.Section, nullableStr(l.EmbedURL),
 		l.CreatedAt.Format(time.RFC3339Nano), l.UpdatedAt.Format(time.RFC3339Nano),
 	)
 	return err
@@ -256,9 +266,9 @@ func (s *SQLiteStore) CreateLink(ctx context.Context, l *Link) error {
 func (s *SQLiteStore) UpdateLink(ctx context.Context, l *Link) error {
 	l.UpdatedAt = time.Now().UTC()
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE links SET title=?, url=?, icon=?, sort_order=?, active=?, featured=?, thumbnail_url=?, starts_at=?, ends_at=?, sensitive=?, updated_at=? WHERE id=?`,
+		UPDATE links SET title=?, url=?, icon=?, sort_order=?, active=?, featured=?, thumbnail_url=?, starts_at=?, ends_at=?, sensitive=?, section=?, embed_url=?, updated_at=? WHERE id=?`,
 		l.Title, l.URL, nullableStr(l.Icon), l.Order, boolInt(l.Active), boolInt(l.Featured), nullableStr(l.ThumbnailURL),
-		nullableTime(l.StartsAt), nullableTime(l.EndsAt), boolInt(l.Sensitive),
+		nullableTime(l.StartsAt), nullableTime(l.EndsAt), boolInt(l.Sensitive), l.Section, nullableStr(l.EmbedURL),
 		l.UpdatedAt.Format(time.RFC3339Nano), l.ID.String(),
 	)
 	if err != nil {
@@ -276,7 +286,7 @@ func (s *SQLiteStore) DeleteLink(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const linkCols = `id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, featured, thumbnail_url, starts_at, ends_at, sensitive, created_at, updated_at`
+const linkCols = `id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, featured, thumbnail_url, starts_at, ends_at, sensitive, section, embed_url, created_at, updated_at`
 
 func (s *SQLiteStore) GetLinkByID(ctx context.Context, id uuid.UUID) (*Link, error) {
 	return scanLink(s.db.QueryRowContext(ctx, `SELECT `+linkCols+` FROM links WHERE id=?`, id.String()))

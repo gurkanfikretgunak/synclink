@@ -39,6 +39,8 @@ type Page struct {
 	Verified     bool
 	PagePassword *string
 	PublishedAt  *time.Time
+	CoverURL     *string
+	CoverKind    string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -58,6 +60,8 @@ type Link struct {
 	StartsAt      *time.Time
 	EndsAt        *time.Time
 	Sensitive     bool
+	Section       string
+	EmbedURL      *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -84,6 +88,8 @@ type PageDTO struct {
 	Verified     bool      `json:"verified"`
 	PagePassword *string    `json:"pagePassword"`
 	PublishedAt  *time.Time `json:"publishedAt"`
+	CoverURL     *string    `json:"coverUrl"`
+	CoverKind    string     `json:"coverKind"`
 	CreatedAt    time.Time  `json:"createdAt"`
 	UpdatedAt    time.Time  `json:"updatedAt"`
 }
@@ -102,6 +108,8 @@ type LinkDTO struct {
 	StartsAt      *time.Time `json:"startsAt"`
 	EndsAt        *time.Time `json:"endsAt"`
 	Sensitive     bool       `json:"sensitive"`
+	Section       string     `json:"section"`
+	EmbedURL      *string    `json:"embedUrl"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }
@@ -119,6 +127,8 @@ type PublicLink struct {
 	StartsAt      *time.Time `json:"startsAt"`
 	EndsAt        *time.Time `json:"endsAt"`
 	Sensitive     bool       `json:"sensitive"`
+	Section       string     `json:"section"`
+	EmbedURL      *string    `json:"embedUrl"`
 }
 
 type PublicPage struct {
@@ -134,6 +144,8 @@ type PublicPage struct {
 	Socials     []Social     `json:"socials"`
 	Verified    bool         `json:"verified"`
 	PublishedAt *time.Time   `json:"publishedAt"`
+	CoverURL    *string      `json:"coverUrl"`
+	CoverKind   string       `json:"coverKind"`
 	Links       []PublicLink `json:"links"`
 }
 
@@ -167,6 +179,8 @@ type UpsertPageInput struct {
 	Motion       string   `json:"motion"`
 	Socials      []Social `json:"socials"`
 	PagePassword *string  `json:"pagePassword"`
+	CoverURL     *string  `json:"coverUrl"`
+	CoverKind    string   `json:"coverKind"`
 }
 
 type CreateLinkInput struct {
@@ -179,6 +193,8 @@ type CreateLinkInput struct {
 	StartsAt     *time.Time `json:"startsAt"`
 	EndsAt       *time.Time `json:"endsAt"`
 	Sensitive    *bool      `json:"sensitive"`
+	Section      string     `json:"section"`
+	EmbedURL     *string    `json:"embedUrl"`
 }
 
 type UpdateLinkInput struct {
@@ -191,6 +207,8 @@ type UpdateLinkInput struct {
 	StartsAt     *time.Time `json:"startsAt"`
 	EndsAt       *time.Time `json:"endsAt"`
 	Sensitive    *bool      `json:"sensitive"`
+	Section      *string    `json:"section"`
+	EmbedURL     *string    `json:"embedUrl"`
 }
 
 func ToPageDTO(p *Page) PageDTO {
@@ -199,7 +217,8 @@ func ToPageDTO(p *Page) PageDTO {
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
 		Socials: copySocials(p.Socials), Verified: p.Verified, PagePassword: copyStr(p.PagePassword),
-		PublishedAt: copyTime(p.PublishedAt), CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		PublishedAt: copyTime(p.PublishedAt), CoverURL: copyStr(p.CoverURL), CoverKind: p.CoverKind,
+		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
 
@@ -208,6 +227,7 @@ func ToLinkDTO(l *Link) LinkDTO {
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon,
 		Order: l.Order, Active: l.Active, Clicks: l.Clicks, LastClickedAt: l.LastClickedAt,
 		Featured: l.Featured, ThumbnailURL: l.ThumbnailURL, StartsAt: l.StartsAt, EndsAt: l.EndsAt, Sensitive: l.Sensitive,
+		Section: l.Section, EmbedURL: l.EmbedURL,
 		CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
 	}
 }
@@ -217,6 +237,7 @@ func ToPublicLink(l *Link) PublicLink {
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order,
 		Clicks: l.Clicks, LastClickedAt: l.LastClickedAt,
 		Featured: l.Featured, ThumbnailURL: l.ThumbnailURL, StartsAt: l.StartsAt, EndsAt: l.EndsAt, Sensitive: l.Sensitive,
+		Section: l.Section, EmbedURL: l.EmbedURL,
 	}
 }
 
@@ -282,4 +303,33 @@ func normalizeOptionalString(in *string) *string {
 		return nil
 	}
 	return &v
+}
+
+func normalizeHTTPURLPtr(in *string) *string {
+	v := normalizeOptionalString(in)
+	if v == nil {
+		return nil
+	}
+	out, ok := normalizeHTTPURL(*v)
+	if !ok {
+		return nil
+	}
+	return &out
+}
+
+func normalizeSection(s string) string {
+	s = strings.TrimSpace(s)
+	if len([]rune(s)) > 40 {
+		s = string([]rune(s)[:40])
+	}
+	return s
+}
+
+func normalizeCoverKind(k string) string {
+	switch strings.ToLower(strings.TrimSpace(k)) {
+	case "image", "video":
+		return strings.ToLower(strings.TrimSpace(k))
+	default:
+		return ""
+	}
 }

@@ -78,7 +78,8 @@ func (s *Service) GetPublicPageWithPassword(ctx context.Context, slug, password 
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
-		Socials: copySocials(p.Socials), Verified: p.Verified, PublishedAt: copyTime(p.PublishedAt), Links: out,
+		Socials: copySocials(p.Socials), Verified: p.Verified, PublishedAt: copyTime(p.PublishedAt),
+		CoverURL: copyStr(p.CoverURL), CoverKind: p.CoverKind, Links: out,
 	}, nil
 }
 
@@ -153,6 +154,11 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		if in.PagePassword != nil {
 			mine.PagePassword = pw
 		}
+		mine.CoverURL = normalizeHTTPURLPtr(in.CoverURL)
+		mine.CoverKind = normalizeCoverKind(in.CoverKind)
+		if mine.CoverURL != nil && mine.CoverKind == "" {
+			mine.CoverKind = "image"
+		}
 		if mine.PublishedAt == nil {
 			now := time.Now().UTC()
 			mine.PublishedAt = &now
@@ -169,6 +175,10 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		Bio:         strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
 		AvatarShape: shape, AccentColor: accent, Background: bg, Motion: motion,
 		Socials: socials, Verified: false, PagePassword: pw,
+		CoverURL: normalizeHTTPURLPtr(in.CoverURL), CoverKind: normalizeCoverKind(in.CoverKind),
+	}
+	if p.CoverURL != nil && p.CoverKind == "" {
+		p.CoverKind = "image"
 	}
 	if err := s.store.CreatePage(ctx, p); err != nil {
 		return nil, err
@@ -227,6 +237,8 @@ func applyCreateLinkExtras(l *Link, in CreateLinkInput) {
 	if in.Sensitive != nil {
 		l.Sensitive = *in.Sensitive
 	}
+	l.Section = normalizeSection(in.Section)
+	l.EmbedURL = normalizeHTTPURLPtr(in.EmbedURL)
 }
 
 func (s *Service) CreateLink(ctx context.Context, userID uuid.UUID, in CreateLinkInput) (*LinkDTO, error) {
@@ -292,6 +304,12 @@ func (s *Service) UpdateLink(ctx context.Context, userID, linkID uuid.UUID, in U
 	}
 	if in.Sensitive != nil {
 		l.Sensitive = *in.Sensitive
+	}
+	if in.Section != nil {
+		l.Section = normalizeSection(*in.Section)
+	}
+	if in.EmbedURL != nil {
+		l.EmbedURL = normalizeHTTPURLPtr(in.EmbedURL)
 	}
 	if err := s.store.UpdateLink(ctx, l); err != nil {
 		return nil, err

@@ -521,3 +521,29 @@ func TestPublishedAtSetOnce(t *testing.T) {
 		t.Fatalf("unsaved page publishedAt should be null, got %#v", empty.PublishedAt)
 	}
 }
+
+func TestCoverSectionEmbed(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	cover := "https://cdn.example.com/hero.mp4"
+	page, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "hub", DisplayName: "H", CoverURL: &cover, CoverKind: "video"})
+	if err != nil || page.CoverURL == nil || *page.CoverURL != cover || page.CoverKind != "video" {
+		t.Fatalf("cover %#v err=%v", page, err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "hub")
+	if err != nil || pub.CoverURL == nil || pub.CoverKind != "video" {
+		t.Fatalf("public cover %#v err=%v", pub, err)
+	}
+	embed := "https://open.spotify.com/track/1"
+	link, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "Song", URL: "https://example.com", Section: "Music", EmbedURL: &embed})
+	if err != nil || link.Section != "Music" || link.EmbedURL == nil || *link.EmbedURL != embed {
+		t.Fatalf("link extras %#v err=%v", link, err)
+	}
+	bad := "not-a-url"
+	cleared := ""
+	upd, err := svc.UpdateLink(ctx, u, link.ID, UpdateLinkInput{Section: &cleared, EmbedURL: &bad})
+	if err != nil || upd.Section != "" || upd.EmbedURL != nil {
+		t.Fatalf("clear/invalid %#v err=%v", upd, err)
+	}
+}

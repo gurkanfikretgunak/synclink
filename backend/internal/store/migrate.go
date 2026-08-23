@@ -35,6 +35,8 @@ CREATE TABLE IF NOT EXISTS pages (
 	verified INTEGER NOT NULL DEFAULT 0,
 	page_password TEXT,
 	published_at TEXT,
+	cover_url TEXT,
+	cover_kind TEXT NOT NULL DEFAULT '',
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
@@ -54,6 +56,8 @@ CREATE TABLE IF NOT EXISTS links (
 	starts_at TEXT,
 	ends_at TEXT,
 	sensitive INTEGER NOT NULL DEFAULT 0,
+	section TEXT NOT NULL DEFAULT '',
+	embed_url TEXT,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
@@ -104,6 +108,10 @@ func Migrate(db *sql.DB) error {
 		{"pages", "verified", "verified INTEGER NOT NULL DEFAULT 0"},
 		{"pages", "page_password", "page_password TEXT"},
 		{"pages", "published_at", "published_at TEXT"},
+		{"pages", "cover_url", "cover_url TEXT"},
+		{"pages", "cover_kind", "cover_kind TEXT NOT NULL DEFAULT ''"},
+		{"links", "section", "section TEXT NOT NULL DEFAULT ''"},
+		{"links", "embed_url", "embed_url TEXT"},
 	}
 	for _, a := range alters {
 		if err := ensureColumn(db, a.table, a.column, a.ddl); err != nil {

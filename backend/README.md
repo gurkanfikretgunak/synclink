@@ -46,3 +46,5 @@ Page extras: verified (default false; owner cannot self-verify). PATCH /api/v1/a
 SQLite: subscribers table; ALTER pages.verified, pages.page_password, links.featured/thumbnail_url/starts_at/ends_at/sensitive.
 
 0.9.1: publishedAt on GET/PUT /me/page and public GET /public/pages/{slug} (RFC3339). Set once on first create. SQLite pages.published_at; migrate backfills from created_at.
+
+0.10.0: coverUrl + coverKind on GET/PUT /me/page and public page. Links accept section (group heading, max 40) and embedUrl (YouTube/Spotify/etc). Invalid http(s) URLs are dropped.
