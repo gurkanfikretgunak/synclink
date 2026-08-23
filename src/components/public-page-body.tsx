@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PublicLinkButton } from "@/components/public-link";
+import { ShareQr } from "@/components/share-qr";
 import { SiteNav } from "@/components/site-nav";
 import { SocialRow } from "@/components/social-row";
 import { SubscribeForm } from "@/components/subscribe-form";
@@ -65,6 +66,7 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
           ))}
         </ul>
         <SubscribeForm slug={page.slug} dark={dark} />
+        <ShareQr slug={page.slug} dark={dark} />
       </div>
     </main>
   );
