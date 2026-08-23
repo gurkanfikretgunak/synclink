@@ -12,10 +12,10 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { SiteNav } from "@/components/site-nav";
 import { SocialRow } from "@/components/social-row";
-import { getToken, setToken, synclink, type LinkItem, type Page } from "@/lib/api";
+import { SOCIAL_NETWORKS, getToken, setToken, synclink, type LinkItem, type Page, type Subscriber } from "@/lib/api";
 
 type Gate = "login" | "register" | "forgot" | "reset";
-type Panel = "identity" | "look" | "socials" | "links" | "account";
+type Panel = "identity" | "look" | "socials" | "links" | "inbox" | "account";
 
 const emptyPage: Page = {
   id: "",
@@ -29,6 +29,7 @@ const emptyPage: Page = {
   background: "cream",
   motion: "subtle",
   socials: [],
+  pagePassword: "",
   createdAt: "",
   updatedAt: "",
 };
@@ -75,6 +76,7 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState<Page>(emptyPage);
   const [links, setLinks] = useState<LinkItem[]>([]);
+  const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -84,13 +86,15 @@ export default function DashboardPage() {
 
   async function boot(next: string, fallbackEmail = "") {
     setError("");
-    const [mine, items, stats] = await Promise.all([
+    const [mine, items, stats, inbox] = await Promise.all([
       synclink.getMyPage(next),
       synclink.listLinks(next),
       synclink.meStats(next).catch(() => ({ totalClicks: 0, links: [] as { id: string; clicks: number }[] })),
+      synclink.listSubscribers(next).catch(() => [] as Subscriber[]),
     ]);
     const clicksById = Object.fromEntries((stats.links || []).map((row) => [row.id, row.clicks]));
     setTotalClicks(stats.totalClicks || items.reduce((sum, item) => sum + (item.clicks || clicksById[item.id] || 0), 0));
+    setSubscribers(inbox);
     if (isLivePage(mine)) {
       setPage({
         ...emptyPage,
@@ -99,12 +103,14 @@ export default function DashboardPage() {
         accentColor: mine.accentColor || "#111111",
         background: mine.background || "cream",
         motion: mine.motion || "subtle",
+        pagePassword: mine.pagePassword || "",
       });
       setLinks(items.map((item) => ({ ...item, clicks: item.clicks ?? clicksById[item.id] })));
       return;
     }
     setPage(draftFrom(fallbackEmail || email));
     setLinks([]);
+    setSubscribers([]);
   }
 
   useEffect(() => {
@@ -180,8 +186,9 @@ export default function DashboardPage() {
         background: page.background,
         motion: page.motion,
         socials: (page.socials || []).filter((item) => item.network && item.url),
+        pagePassword: page.pagePassword || "",
       });
-      setPage(next);
+      setPage({ ...next, pagePassword: next.pagePassword || page.pagePassword || "" });
       setNotice(`Live at /${next.slug}`);
       return next;
     } catch (err) {
@@ -217,7 +224,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function patchLink(id: string, input: { title?: string; url?: string; active?: boolean }) {
+  async function patchLink(id: string, input: Partial<LinkItem>) {
     if (!token) return;
     try {
       const next = await synclink.updateLink(token, id, input);
@@ -260,12 +267,13 @@ export default function DashboardPage() {
     setTok(null);
     setPage(emptyPage);
     setLinks([]);
+    setSubscribers([]);
   }
 
   const shape = shapeClass[page.avatarShape] || shapeClass.circle;
   const tone = bgClass[page.background] || bgClass.cream;
   const dark = page.background === "dark";
-  const activeLinks = links.filter((item) => item.active);
+  const activeLinks = [...links].filter((item) => item.active).sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
 
   if (!token) {
     return (
@@ -351,6 +359,7 @@ export default function DashboardPage() {
                 <div className="space-y-2"><Label htmlFor="displayName">Display name</Label><Input id="displayName" value={page.displayName} onChange={(e) => setPage({ ...page, displayName: e.target.value })} required /></div>
                 <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" value={page.bio} onChange={(e) => setPage({ ...page, bio: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input id="avatarUrl" value={page.avatarUrl || ""} onChange={(e) => setPage({ ...page, avatarUrl: e.target.value || null })} /></div>
+                <div className="space-y-2"><Label htmlFor="pagePassword">Page password</Label><Input id="pagePassword" type="password" value={page.pagePassword || ""} onChange={(e) => setPage({ ...page, pagePassword: e.target.value })} placeholder="empty = public" /></div>
                 <Button type="submit" disabled={saving}>{saving ? "Saving…" : saved ? "Save identity" : "Publish page"}</Button>
               </form>
             </CardContent>
@@ -361,16 +370,25 @@ export default function DashboardPage() {
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Socials</CardTitle>
-              <CardDescription>Icon row under the avatar. network + url. Lands when the API accepts socials.</CardDescription>
+              <CardDescription>Icon row under the avatar. Allowed networks only.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {(page.socials || []).map((item, index) => (
                 <div key={index} className="grid gap-2 md:grid-cols-[140px_1fr_auto]">
-                  <Input placeholder="github" value={item.network} onChange={(e) => {
-                    const socials = [...(page.socials || [])];
-                    socials[index] = { ...socials[index], network: e.target.value };
-                    setPage({ ...page, socials });
-                  }} />
+                  <select
+                    className="h-9 rounded-md border border-neutral-200 bg-transparent px-2 text-sm"
+                    value={item.network}
+                    onChange={(e) => {
+                      const socials = [...(page.socials || [])];
+                      socials[index] = { ...socials[index], network: e.target.value };
+                      setPage({ ...page, socials });
+                    }}
+                  >
+                    <option value="">network</option>
+                    {SOCIAL_NETWORKS.map((network) => (
+                      <option key={network} value={network}>{network}</option>
+                    ))}
+                  </select>
                   <Input placeholder="https://" value={item.url} onChange={(e) => {
                     const socials = [...(page.socials || [])];
                     socials[index] = { ...socials[index], url: e.target.value };
@@ -380,7 +398,7 @@ export default function DashboardPage() {
                 </div>
               ))}
               <div className="flex gap-2">
-                <Button type="button" variant="outline" onClick={() => setPage({ ...page, socials: [...(page.socials || []), { network: "", url: "" }] })}>Add social</Button>
+                <Button type="button" variant="outline" onClick={() => setPage({ ...page, socials: [...(page.socials || []), { network: "website", url: "" }] })}>Add social</Button>
                 <Button type="button" onClick={() => void savePage()}>Save socials</Button>
               </div>
             </CardContent>
@@ -395,6 +413,19 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={onSavePage}>
+                <div className="space-y-2">
+                  <Label>Presets</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { name: "cream", background: "cream", motion: "subtle", accentColor: "#111111" },
+                      { name: "white", background: "white", motion: "none", accentColor: "#111111" },
+                      { name: "dark", background: "dark", motion: "subtle", accentColor: "#faf9f7" },
+                      { name: "motion", background: "motion", motion: "lively", accentColor: "#111111" },
+                    ].map((preset) => (
+                      <Button key={preset.name} type="button" variant={page.background === preset.background ? "default" : "outline"} onClick={() => setPage({ ...page, ...preset })}>{preset.name}</Button>
+                    ))}
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label>Avatar shape</Label>
                   <div className="flex flex-wrap gap-2">
@@ -430,7 +461,7 @@ export default function DashboardPage() {
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
               <CardTitle className="font-medium">Links</CardTitle>
-              <CardDescription>{saved ? "Add, edit, hide, reorder." : "Publishes the page first, then adds the link."}</CardDescription>
+              <CardDescription>{saved ? "Add, pin, schedule, mark sensitive." : "Publishes the page first, then adds the link."}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]" onSubmit={addLink}>
@@ -444,13 +475,44 @@ export default function DashboardPage() {
                   <li key={item.id} className="space-y-2 rounded-2xl border border-neutral-200 px-4 py-3">
                     <Input defaultValue={item.title} onBlur={(e) => e.target.value !== item.title && void patchLink(item.id, { title: e.target.value })} />
                     <Input defaultValue={item.url} onBlur={(e) => e.target.value !== item.url && void patchLink(item.id, { url: e.target.value })} />
+                    <Input defaultValue={item.thumbnailUrl || ""} placeholder="Thumbnail URL" onBlur={(e) => e.target.value !== (item.thumbnailUrl || "") && void patchLink(item.id, { thumbnailUrl: e.target.value || null })} />
+                    <div className="grid gap-2 md:grid-cols-2">
+                      <Input type="datetime-local" defaultValue={(item.startsAt || "").slice(0, 16)} onBlur={(e) => void patchLink(item.id, { startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+                      <Input type="datetime-local" defaultValue={(item.endsAt || "").slice(0, 16)} onBlur={(e) => void patchLink(item.id, { endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
+                    </div>
                     <p className="text-xs text-neutral-500">{item.clicks ?? 0} taps{item.lastClickedAt ? ` · last ${new Date(item.lastClickedAt).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</p>
                     <div className="flex flex-wrap gap-1">
                       <Button type="button" size="sm" variant="ghost" disabled={index === 0} onClick={() => void move(item.id, -1)}>Up</Button>
                       <Button type="button" size="sm" variant="ghost" disabled={index === links.length - 1} onClick={() => void move(item.id, 1)}>Down</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => void patchLink(item.id, { featured: !item.featured })}>{item.featured ? "Unpin" : "Pin"}</Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => void patchLink(item.id, { sensitive: !item.sensitive })}>{item.sensitive ? "Clear 18+" : "18+"}</Button>
                       <Button type="button" size="sm" variant="ghost" onClick={() => void patchLink(item.id, { active: !item.active })}>{item.active ? "Hide" : "Show"}</Button>
                       <Button type="button" size="sm" variant="ghost" onClick={() => token && synclink.deleteLink(token, item.id).then(() => setLinks((c) => c.filter((l) => l.id !== item.id)))}>Delete</Button>
                     </div>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ) : null}
+
+
+        {panel === "inbox" ? (
+          <Card className="border-neutral-200/80 bg-white shadow-none">
+            <CardHeader>
+              <CardTitle className="font-medium">Inbox</CardTitle>
+              <CardDescription>Emails from the public subscribe form.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {subscribers.length === 0 ? <p className="text-sm text-neutral-500">No subscribers yet.</p> : null}
+              <ul className="space-y-2">
+                {subscribers.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 px-4 py-3 text-sm">
+                    <div>
+                      <p>{item.email}</p>
+                      <p className="text-xs text-neutral-400">{item.createdAt ? new Date(item.createdAt).toLocaleString("tr-TR") : ""}</p>
+                    </div>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => token && synclink.deleteSubscriber(token, item.id).then(() => setSubscribers((c) => c.filter((row) => row.id !== item.id)))}>Delete</Button>
                   </li>
                 ))}
               </ul>
@@ -477,7 +539,7 @@ export default function DashboardPage() {
       <aside className="order-first space-y-4 lg:order-none lg:sticky lg:top-8 lg:self-start">
         <button type="button" onClick={() => setPanel("identity")} className={`w-full overflow-hidden rounded-3xl border text-left ${tone} ${panel === "identity" ? "ring-2 ring-neutral-900" : "border-neutral-200"}`}>
           <div className="px-5 py-6">
-            <p className="text-[10px] tracking-[0.24em] opacity-50">{saved ? "LIVE PREVIEW" : "DRAFT PREVIEW"}</p>
+            <p className="text-[10px] tracking-[0.24em] opacity-50">{saved ? "LIVE PREVIEW" : "DRAFT PREVIEW"}{page.verified ? " · VERIFIED" : ""}</p>
             <div className="mt-4 flex items-center gap-3">
               <Avatar className={`size-12 border ${shape} ${dark ? "border-white/15" : "border-neutral-200"}`}>
                 {page.avatarUrl ? <AvatarImage src={page.avatarUrl} alt="" /> : null}
@@ -492,7 +554,7 @@ export default function DashboardPage() {
             <SocialRow socials={page.socials} dark={dark} />
             <ul className="mt-4 space-y-2">
               {activeLinks.map((item) => (
-                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.title}{typeof item.clicks === "number" ? ` · ${item.clicks}` : ""}</li>
+                <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.featured ? "★ " : ""}{item.title}{typeof item.clicks === "number" ? ` · ${item.clicks}` : ""}</li>
               ))}
               {activeLinks.length === 0 ? <li className="text-xs opacity-50">No links yet</li> : null}
             </ul>
@@ -514,6 +576,12 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base font-medium">Socials</CardTitle>
             <CardDescription>{(page.socials || []).filter((item) => item.network && item.url).length} icons</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "inbox" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("inbox")}>
+          <CardHeader>
+            <CardTitle className="text-base font-medium">Inbox</CardTitle>
+            <CardDescription>{subscribers.length} emails</CardDescription>
           </CardHeader>
         </Card>
         <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "account" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("account")}>
