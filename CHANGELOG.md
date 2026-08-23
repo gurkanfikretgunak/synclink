@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.10.0] - 2026-08-23
+
+### App
+- Studio + public cover (`coverUrl`, `coverKind` image|video), link `section` (max 40), and `embedUrl`. Hidden until API 0.10.0 is live.
+
 ## [0.9.2] - 2026-08-23
 
 ### App
