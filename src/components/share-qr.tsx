@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 export function ShareQr({ slug, dark = false }: { slug: string; dark?: boolean }) {
   const [href, setHref] = useState("");
   const [copied, setCopied] = useState(false);
+  const [canShare, setCanShare] = useState(false);
 
   useEffect(() => {
     if (!slug) {
@@ -13,6 +14,7 @@ export function ShareQr({ slug, dark = false }: { slug: string; dark?: boolean }
       return;
     }
     setHref(`${window.location.origin}/${slug}`);
+    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
   }, [slug]);
 
   if (!slug) return null;
@@ -32,6 +34,16 @@ export function ShareQr({ slug, dark = false }: { slug: string; dark?: boolean }
     }
   }
 
+  async function share() {
+    if (!href) return;
+    try {
+      await navigator.share({ title: document.title, url: href, text: href });
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      await copy();
+    }
+  }
+
   return (
     <div className={`mt-8 w-full space-y-3 rounded-2xl border px-4 py-4 ${dark ? "border-white/15 bg-white/5" : "border-neutral-200 bg-white"}`}>
       <p className={`text-xs tracking-[0.16em] ${dark ? "text-white/50" : "text-neutral-400"}`}>SHARE</p>
@@ -41,6 +53,11 @@ export function ShareQr({ slug, dark = false }: { slug: string; dark?: boolean }
       ) : null}
       <p className={`break-all text-center text-xs ${dark ? "text-white/60" : "text-neutral-500"}`}>{href || `/${slug}`}</p>
       <div className="flex justify-center gap-2">
+        {canShare ? (
+          <Button type="button" size="sm" onClick={() => void share()}>
+            Share
+          </Button>
+        ) : null}
         <Button type="button" size="sm" variant="outline" onClick={() => void copy()}>
           {copied ? "Copied" : "Copy URL"}
         </Button>
