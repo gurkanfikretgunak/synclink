@@ -5,6 +5,13 @@ All notable changes to SyncLink live in this file.
 ## [Unreleased]
 ## [0.9.0] - 2026-08-23
 
+### App
+- Public `/{slug}` email form `POST /api/v1/public/pages/{slug}/subscribe` `{email}` (201). Hides itself if the route is missing.
+- Studio Inbox lists `GET /api/v1/me/subscribers` and deletes via `DELETE /api/v1/me/subscribers/{id}`.
+- Locked pages: public 401 `locked` shows an unlock form that sends `X-Page-Password`.
+- Studio identity can set `pagePassword`. Look presets (cream/white/dark/motion). Social network select includes whatsapp.
+- Link extras in studio + public: featured, thumbnailUrl, startsAt/endsAt, sensitive (18+ confirm). Verified badge when API sets it.
+
 ### Added
 - Email capture: `subscribers` table (`id`, `page_id`, `email`, `created_at`, unique `page_id+email`).
 - `POST /api/v1/public/pages/{slug}/subscribe` `{email}` → `201 {"ok":true}`; `400` invalid email; `404` missing page; `409` duplicate.

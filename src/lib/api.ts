@@ -19,9 +19,29 @@ export function setToken(token: string | null): void {
   else window.localStorage.removeItem(TOKEN_KEY);
 }
 
+export const SOCIAL_NETWORKS = [
+  "instagram",
+  "x",
+  "youtube",
+  "tiktok",
+  "github",
+  "linkedin",
+  "threads",
+  "spotify",
+  "whatsapp",
+  "website",
+  "email",
+] as const;
+
 export type Social = {
   network: string;
   url: string;
+};
+
+export type Subscriber = {
+  id: string;
+  email: string;
+  createdAt: string;
 };
 
 export type Page = {
@@ -36,6 +56,8 @@ export type Page = {
   background: string;
   motion: string;
   socials?: Social[];
+  verified?: boolean;
+  pagePassword?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -49,6 +71,11 @@ export type LinkItem = {
   active: boolean;
   clicks?: number;
   lastClickedAt?: string | null;
+  featured?: boolean;
+  thumbnailUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  sensitive?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -61,6 +88,9 @@ export type PublicLink = {
   order: number;
   clicks?: number;
   lastClickedAt?: string | null;
+  featured?: boolean;
+  thumbnailUrl?: string | null;
+  sensitive?: boolean;
 };
 
 export type PublicPage = {
@@ -74,6 +104,7 @@ export type PublicPage = {
   background: string;
   motion: string;
   socials?: Social[];
+  verified?: boolean;
   links: PublicLink[];
 };
 
@@ -88,6 +119,7 @@ export type UpsertPageInput = {
   background?: string;
   motion?: string;
   socials?: Social[];
+  pagePassword?: string;
 };
 
 export type CreateLinkInput = {
@@ -95,6 +127,11 @@ export type CreateLinkInput = {
   url: string;
   icon?: string | null;
   active?: boolean;
+  featured?: boolean;
+  thumbnailUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  sensitive?: boolean;
 };
 
 export type UpdateLinkInput = {
@@ -102,6 +139,11 @@ export type UpdateLinkInput = {
   url?: string;
   icon?: string | null;
   active?: boolean;
+  featured?: boolean;
+  thumbnailUrl?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  sensitive?: boolean;
 };
 
 export type AdminUser = {
@@ -203,8 +245,27 @@ async function request<T>(
 }
 
 export const synclink = {
-  getPublicPage(slug: string) {
-    return request<PublicPage>(`/api/v1/public/pages/${encodeURIComponent(slug)}`);
+  getPublicPage(slug: string, pagePassword?: string) {
+    return request<PublicPage>(`/api/v1/public/pages/${encodeURIComponent(slug)}`, {
+      headers: pagePassword ? { "X-Page-Password": pagePassword } : undefined,
+    });
+  },
+  subscribe(slug: string, email: string) {
+    return request<{ ok: boolean }>(`/api/v1/public/pages/${encodeURIComponent(slug)}/subscribe`, {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  },
+  listSubscribers(token: string) {
+    return request<Subscriber[] | null>("/api/v1/me/subscribers", { token, allow404: true }).then(
+      (items) => items || [],
+    );
+  },
+  deleteSubscriber(token: string, id: string) {
+    return request<void>(`/api/v1/me/subscribers/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+      token,
+    });
   },
   recordClick(slug: string, id: string) {
     return request<{ ok: boolean; clicks: number }>(
@@ -314,6 +375,13 @@ export const synclink = {
   },
   adminPages(token: string) {
     return request<Page[]>("/api/v1/admin/pages", { token });
+  },
+  adminPatchPage(token: string, id: string, input: { verified?: boolean }) {
+    return request<Page>(`/api/v1/admin/pages/${id}`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify(input),
+    });
   },
   adminSettings(token: string) {
     return request<PlatformSettings>("/api/v1/admin/settings", { token });
