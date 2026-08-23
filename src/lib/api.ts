@@ -58,6 +58,7 @@ export type Page = {
   socials?: Social[];
   verified?: boolean;
   pagePassword?: string;
+  publishedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -105,6 +106,7 @@ export type PublicPage = {
   motion: string;
   socials?: Social[];
   verified?: boolean;
+  publishedAt?: string | null;
   links: PublicLink[];
 };
 
