@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.9.2: public page shows publishedAt when the API sends it.
+
 0.9.1: public + studio QR share (copy URL / PNG). No new API.
 
 0.9.0 app: public subscribe form, studio Inbox, look presets, link pin/thumbnail/schedule/18+, page password unlock. 0.9.0 API: public email subscribe POST /api/v1/public/pages/{slug}/subscribe; owner GET/DELETE /api/v1/me/subscribers. Links carry featured, thumbnailUrl, startsAt, endsAt, sensitive (public hides inactive/unstarted/ended). Pages have verified (admin PATCH /admin/pages/{id}) and optional pagePassword (public 401 locked unless X-Page-Password). Socials allow whatsapp (https://wa.me/...).
