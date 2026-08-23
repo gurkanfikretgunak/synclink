@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.9.2] - 2026-08-23
+
+### App
+- Public `/{slug}` shows `publishedAt` when the API sends it (hidden until Render recuts 0.9.1).
+
 ## [0.9.1] - 2026-08-23
 
 ### App
