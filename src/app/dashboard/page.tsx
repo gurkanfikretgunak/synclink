@@ -411,6 +411,7 @@ export default function DashboardPage() {
                   <li key={item.id} className="space-y-2 rounded-2xl border border-neutral-200 px-4 py-3">
                     <Input defaultValue={item.title} onBlur={(e) => e.target.value !== item.title && void patchLink(item.id, { title: e.target.value })} />
                     <Input defaultValue={item.url} onBlur={(e) => e.target.value !== item.url && void patchLink(item.id, { url: e.target.value })} />
+                    <p className="text-xs text-neutral-500">{item.clicks ?? 0} taps{item.lastClickedAt ? ` · last ${new Date(item.lastClickedAt).toLocaleString("tr-TR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</p>
                     <div className="flex flex-wrap gap-1">
                       <Button type="button" size="sm" variant="ghost" disabled={index === 0} onClick={() => void move(item.id, -1)}>Up</Button>
                       <Button type="button" size="sm" variant="ghost" disabled={index === links.length - 1} onClick={() => void move(item.id, 1)}>Down</Button>

@@ -7,6 +7,7 @@ All notable changes to SyncLink live in this file.
 
 ### Added
 - `lastClickedAt` on `Link`, `LinkDTO`, and public links (JSON camelCase; null if never clicked). Set by `RecordClick` / `IncrementClicks` in memory and SQLite (`last_clicked_at` TEXT nullable, ALTER on migrate).
+- Studio and public `/{slug}` show last tap when `lastClickedAt` is set.
 
 ## [0.8.0] - 2026-08-22
 

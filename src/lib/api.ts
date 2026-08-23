@@ -42,6 +42,7 @@ export type LinkItem = {
   order: number;
   active: boolean;
   clicks?: number;
+  lastClickedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -53,6 +54,7 @@ export type PublicLink = {
   icon: string | null;
   order: number;
   clicks?: number;
+  lastClickedAt?: string | null;
 };
 
 export type PublicPage = {
