@@ -30,6 +30,8 @@ const emptyPage: Page = {
   motion: "subtle",
   socials: [],
   pagePassword: "",
+  coverUrl: null,
+  coverKind: "image",
   createdAt: "",
   updatedAt: "",
 };
@@ -104,6 +106,8 @@ export default function DashboardPage() {
         background: mine.background || "cream",
         motion: mine.motion || "subtle",
         pagePassword: mine.pagePassword || "",
+        coverUrl: mine.coverUrl || null,
+        coverKind: mine.coverKind || "image",
       });
       setLinks(items.map((item) => ({ ...item, clicks: item.clicks ?? clicksById[item.id] })));
       return;
@@ -187,6 +191,8 @@ export default function DashboardPage() {
         motion: page.motion,
         socials: (page.socials || []).filter((item) => item.network && item.url),
         pagePassword: page.pagePassword || "",
+        coverUrl: page.coverUrl || null,
+        coverKind: page.coverKind || "image",
       });
       setPage({ ...next, pagePassword: next.pagePassword || page.pagePassword || "" });
       setNotice(`Live at /${next.slug}`);
@@ -360,6 +366,12 @@ export default function DashboardPage() {
                 <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" value={page.bio} onChange={(e) => setPage({ ...page, bio: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input id="avatarUrl" value={page.avatarUrl || ""} onChange={(e) => setPage({ ...page, avatarUrl: e.target.value || null })} /></div>
                 <div className="space-y-2"><Label htmlFor="pagePassword">Page password</Label><Input id="pagePassword" type="password" value={page.pagePassword || ""} onChange={(e) => setPage({ ...page, pagePassword: e.target.value })} placeholder="empty = public" /></div>
+                <div className="space-y-2"><Label htmlFor="coverUrl">Cover URL</Label><Input id="coverUrl" value={page.coverUrl || ""} onChange={(e) => setPage({ ...page, coverUrl: e.target.value || null })} placeholder="https:// image or video" /></div>
+                <div className="flex flex-wrap gap-2">
+                  {["image", "video"].map((value) => (
+                    <Button key={value} type="button" variant={page.coverKind === value ? "default" : "outline"} onClick={() => setPage({ ...page, coverKind: value })}>{value}</Button>
+                  ))}
+                </div>
                 <Button type="submit" disabled={saving}>{saving ? "Saving…" : saved ? "Save identity" : "Publish page"}</Button>
               </form>
             </CardContent>
@@ -476,6 +488,8 @@ export default function DashboardPage() {
                     <Input defaultValue={item.title} onBlur={(e) => e.target.value !== item.title && void patchLink(item.id, { title: e.target.value })} />
                     <Input defaultValue={item.url} onBlur={(e) => e.target.value !== item.url && void patchLink(item.id, { url: e.target.value })} />
                     <Input defaultValue={item.thumbnailUrl || ""} placeholder="Thumbnail URL" onBlur={(e) => e.target.value !== (item.thumbnailUrl || "") && void patchLink(item.id, { thumbnailUrl: e.target.value || null })} />
+                    <Input defaultValue={item.section || ""} placeholder="Section" maxLength={40} onBlur={(e) => e.target.value !== (item.section || "") && void patchLink(item.id, { section: e.target.value || null })} />
+                    <Input defaultValue={item.embedUrl || ""} placeholder="Embed URL" onBlur={(e) => e.target.value !== (item.embedUrl || "") && void patchLink(item.id, { embedUrl: e.target.value || null })} />
                     <div className="grid gap-2 md:grid-cols-2">
                       <Input type="datetime-local" defaultValue={(item.startsAt || "").slice(0, 16)} onBlur={(e) => void patchLink(item.id, { startsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
                       <Input type="datetime-local" defaultValue={(item.endsAt || "").slice(0, 16)} onBlur={(e) => void patchLink(item.id, { endsAt: e.target.value ? new Date(e.target.value).toISOString() : null })} />
