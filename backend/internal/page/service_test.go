@@ -303,9 +303,10 @@ func TestNormalizeAndUpsertSocials(t *testing.T) {
 		{Network: "myspace", URL: "https://myspace.com/x"},
 		{Network: "website", URL: "not-a-url"},
 		{Network: "instagram", URL: "https://instagram.com/g"},
+		{Network: "whatsapp", URL: "https://wa.me/15551234567"},
 	})
-	if len(got) != 4 {
-		t.Fatalf("expected 4 kept, got %#v", got)
+	if len(got) != 5 {
+		t.Fatalf("expected 5 kept, got %#v", got)
 	}
 	if got[0].Network != "x" || got[0].URL != "https://x.com/g" {
 		t.Fatalf("twitter→x %#v", got[0])
@@ -318,6 +319,9 @@ func TestNormalizeAndUpsertSocials(t *testing.T) {
 	}
 	if got[3].Network != "instagram" {
 		t.Fatalf("instagram %#v", got[3])
+	}
+	if got[4].Network != "whatsapp" || got[4].URL != "https://wa.me/15551234567" {
+		t.Fatalf("whatsapp %#v", got[4])
 	}
 	if n := NormalizeSocials(nil); n == nil || len(n) != 0 {
 		t.Fatalf("nil → [] got %#v", n)
@@ -357,5 +361,127 @@ func TestNormalizeAndUpsertSocials(t *testing.T) {
 	cleared, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "me", DisplayName: "Me"})
 	if err != nil || cleared.Socials == nil || len(cleared.Socials) != 0 {
 		t.Fatalf("clear socials %#v err=%v", cleared, err)
+	}
+}
+
+func TestSubscribeListDelete(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Subscribe(ctx, "gurkan", "fan@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Subscribe(ctx, "gurkan", "fan@example.com"); !errors.Is(err, ErrConflict) {
+		t.Fatalf("dup %v", err)
+	}
+	if err := svc.Subscribe(ctx, "gurkan", "not-an-email"); !errors.Is(err, ErrValidation) {
+		t.Fatalf("invalid %v", err)
+	}
+	if err := svc.Subscribe(ctx, "missing", "fan@example.com"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing page %v", err)
+	}
+	subs, err := svc.ListMySubscribers(ctx, u)
+	if err != nil || len(subs) != 1 || subs[0].Email != "fan@example.com" {
+		t.Fatalf("list %#v err=%v", subs, err)
+	}
+	if err := svc.DeleteMySubscriber(ctx, u, subs[0].ID); err != nil {
+		t.Fatal(err)
+	}
+	subs, err = svc.ListMySubscribers(ctx, u)
+	if err != nil || len(subs) != 0 {
+		t.Fatalf("after delete %#v err=%v", subs, err)
+	}
+	empty, err := svc.ListMySubscribers(ctx, uuid.New())
+	if err != nil || empty == nil || len(empty) != 0 {
+		t.Fatalf("no page %#v err=%v", empty, err)
+	}
+}
+
+func TestLinkScheduleAndExtras(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "me", DisplayName: "Me"}); err != nil {
+		t.Fatal(err)
+	}
+	feat := true
+	sens := true
+	thumb := "https://img.example/a.png"
+	future := time.Now().UTC().Add(2 * time.Hour)
+	past := time.Now().UTC().Add(-2 * time.Hour)
+	live, err := svc.CreateLink(ctx, u, CreateLinkInput{
+		Title: "Live", URL: "https://a.com", Featured: &feat, ThumbnailURL: &thumb, Sensitive: &sens,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !live.Featured || !live.Sensitive || live.ThumbnailURL == nil || *live.ThumbnailURL != thumb {
+		t.Fatalf("extras %#v", live)
+	}
+	if _, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "Soon", URL: "https://b.com", StartsAt: &future}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "Gone", URL: "https://c.com", EndsAt: &past}); err != nil {
+		t.Fatal(err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "me")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(pub.Links) != 1 || pub.Links[0].Title != "Live" || !pub.Links[0].Featured || !pub.Links[0].Sensitive {
+		t.Fatalf("public schedule %#v", pub.Links)
+	}
+	studio, err := svc.ListLinks(ctx, u)
+	if err != nil || len(studio) != 3 {
+		t.Fatalf("studio should keep all %#v err=%v", studio, err)
+	}
+}
+
+func TestPagePasswordAndVerified(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	pw := "secret"
+	page, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "lock", DisplayName: "L", PagePassword: &pw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.Verified {
+		t.Fatal("owner must not self-verify")
+	}
+	if page.PagePassword == nil || *page.PagePassword != "secret" {
+		t.Fatalf("password %#v", page.PagePassword)
+	}
+	if _, err := svc.GetPublicPage(ctx, "lock"); !errors.Is(err, ErrLocked) {
+		t.Fatalf("locked without pw %v", err)
+	}
+	if _, err := svc.GetPublicPageWithPassword(ctx, "lock", "wrong"); !errors.Is(err, ErrLocked) {
+		t.Fatalf("wrong pw %v", err)
+	}
+	pub, err := svc.GetPublicPageWithPassword(ctx, "lock", "secret")
+	if err != nil || pub.Slug != "lock" || pub.Verified {
+		t.Fatalf("unlock %#v err=%v", pub, err)
+	}
+	got, err := svc.SetPageVerified(ctx, page.ID, true)
+	if err != nil || !got.Verified {
+		t.Fatalf("admin verify %#v err=%v", got, err)
+	}
+	again, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "lock", DisplayName: "L2"})
+	if err != nil || !again.Verified || again.DisplayName != "L2" {
+		t.Fatalf("owner upsert must keep verified %#v err=%v", again, err)
+	}
+	if again.PagePassword == nil || *again.PagePassword != "secret" {
+		t.Fatalf("omit password should keep %#v", again.PagePassword)
+	}
+	empty := ""
+	cleared, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "lock", DisplayName: "L2", PagePassword: &empty})
+	if err != nil || cleared.PagePassword != nil {
+		t.Fatalf("clear password %#v err=%v", cleared, err)
+	}
+	if _, err := svc.GetPublicPage(ctx, "lock"); err != nil {
+		t.Fatalf("unlocked after clear %v", err)
 	}
 }

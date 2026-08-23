@@ -98,21 +98,56 @@ func TestSQLiteSocialsPersist(t *testing.T) {
 		Socials: []Social{
 			{Network: "twitter", URL: "https://x.com/g"},
 			{Network: "email", URL: "mailto:g@example.com"},
+			{Network: "whatsapp", URL: "https://wa.me/15551234567"},
 			{Network: "bad", URL: "https://nope.com"},
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(page.Socials) != 2 || page.Socials[0].Network != "x" {
+	if len(page.Socials) != 3 || page.Socials[0].Network != "x" {
 		t.Fatalf("sqlite upsert %#v", page.Socials)
 	}
 	got, err := svc.GetPublicPage(ctx, "gurkan")
-	if err != nil || len(got.Socials) != 2 || got.Socials[0].Network != "x" || got.Socials[1].URL != "mailto:g@example.com" {
+	if err != nil || len(got.Socials) != 3 || got.Socials[0].Network != "x" || got.Socials[1].URL != "mailto:g@example.com" || got.Socials[2].Network != "whatsapp" {
 		t.Fatalf("sqlite public %#v err=%v", got, err)
 	}
 	mine, err := svc.GetMyPage(ctx, u)
-	if err != nil || mine.Socials == nil || len(mine.Socials) != 2 {
+	if err != nil || mine.Socials == nil || len(mine.Socials) != 3 {
 		t.Fatalf("sqlite me %#v err=%v", mine, err)
+	}
+}
+
+func TestSQLiteSubscribeAndLinkExtras(t *testing.T) {
+	db, err := store.Open(":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	svc := NewService(NewSQLiteStore(db))
+	ctx := context.Background()
+	u := uuid.New()
+	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
+		t.Fatal(err)
+	}
+	feat := true
+	thumb := "https://img.example/a.png"
+	link, err := svc.CreateLink(ctx, u, CreateLinkInput{Title: "On", URL: "https://a.com", Featured: &feat, ThumbnailURL: &thumb})
+	if err != nil || !link.Featured || link.ThumbnailURL == nil {
+		t.Fatalf("create extras %#v err=%v", link, err)
+	}
+	if err := svc.Subscribe(ctx, "gurkan", "a@b.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.Subscribe(ctx, "gurkan", "a@b.com"); !errors.Is(err, ErrConflict) {
+		t.Fatalf("dup %v", err)
+	}
+	subs, err := svc.ListMySubscribers(ctx, u)
+	if err != nil || len(subs) != 1 || subs[0].Email != "a@b.com" {
+		t.Fatalf("subs %#v err=%v", subs, err)
+	}
+	pub, err := svc.GetPublicPage(ctx, "gurkan")
+	if err != nil || len(pub.Links) != 1 || !pub.Links[0].Featured {
+		t.Fatalf("public extras %#v err=%v", pub, err)
 	}
 }

@@ -27,9 +27,25 @@ type LinkStore interface {
 	SumClicks(ctx context.Context) (int, error)
 }
 
+type SubscriberStore interface {
+	CreateSubscriber(ctx context.Context, s *Subscriber) error
+	ListSubscribers(ctx context.Context, pageID uuid.UUID) ([]*Subscriber, error)
+	GetSubscriberByID(ctx context.Context, id uuid.UUID) (*Subscriber, error)
+	DeleteSubscriber(ctx context.Context, id uuid.UUID) error
+}
+
 type Store interface {
 	PageStore
 	LinkStore
+	SubscriberStore
+}
+
+func clonePage(p *Page) *Page {
+	cp := *p
+	cp.Socials = copySocials(p.Socials)
+	cp.PagePassword = copyStr(p.PagePassword)
+	cp.AvatarURL = copyStr(p.AvatarURL)
+	return &cp
 }
 
 func (m *MemoryStore) ListPages(ctx context.Context) ([]*Page, error) {
@@ -37,9 +53,7 @@ func (m *MemoryStore) ListPages(ctx context.Context) ([]*Page, error) {
 	defer m.mu.Unlock()
 	out := make([]*Page, 0, len(m.pages))
 	for _, p := range m.pages {
-		cp := *p
-		cp.Socials = copySocials(p.Socials)
-		out = append(out, &cp)
+		out = append(out, clonePage(p))
 	}
 	return out, nil
 }

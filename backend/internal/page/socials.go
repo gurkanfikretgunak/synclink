@@ -24,6 +24,7 @@ var allowedNetworks = map[string]struct{}{
 	"spotify":   {},
 	"website":   {},
 	"email":     {},
+	"whatsapp":  {},
 }
 
 func emptySocials() []Social {

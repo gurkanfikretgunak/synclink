@@ -33,6 +33,14 @@ Studio stats: GET /api/v1/me/stats (JWT) returns totalClicks plus each link id/t
 Admin stats: GET /api/v1/admin/stats includes users, pages, and totalClicks (SumClicks on memory and SQLite).
 
 Socials on GET/PUT /api/v1/me/page and public GET /api/v1/public/pages/{slug}: `socials: [{ "network": "github", "url": "https://github.com/..." }]`. Empty/null stores and returns `[]`.
-Allowed networks (lowercase): instagram, x (twitter normalizes to x), youtube, tiktok, github, linkedin, threads, spotify, website, email.
+Allowed networks (lowercase): instagram, x (twitter normalizes to x), youtube, tiktok, github, linkedin, threads, spotify, website, email, whatsapp.
 URLs must be http(s) except email, which also accepts mailto: or an address like name@host. Invalid items are dropped; at most 12 are kept.
 SQLite column `pages.socials` TEXT (JSON array); existing DBs get ALTER TABLE on migrate.
+
+0.9.0: POST /api/v1/public/pages/{slug}/subscribe `{email}` → 201 `{ok:true}` (400/404/409). GET /api/v1/me/subscribers JWT `[{id,email,createdAt}]`. DELETE /api/v1/me/subscribers/{id} JWT.
+
+Link extras (create/update and public): featured, thumbnailUrl, startsAt, endsAt, sensitive. Public GetPublicPage skips inactive and links outside the schedule window.
+
+Page extras: verified (default false; owner cannot self-verify). PATCH /api/v1/admin/pages/{id} `{verified}` admin JWT. Optional pagePassword on owner page; public GET returns 401 `{error:locked}` without matching X-Page-Password.
+
+SQLite: subscribers table; ALTER pages.verified, pages.page_password, links.featured/thumbnail_url/starts_at/ends_at/sensitive.

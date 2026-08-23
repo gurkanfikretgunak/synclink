@@ -34,3 +34,5 @@ SQLite via SYNCLINK_DB. See CHANGELOG.md and backend/README.md.
 Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields come from public settings.
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
+
+0.9.0 API: public email subscribe POST /api/v1/public/pages/{slug}/subscribe; owner GET/DELETE /api/v1/me/subscribers. Links carry featured, thumbnailUrl, startsAt, endsAt, sensitive (public hides inactive/unstarted/ended). Pages have verified (admin PATCH /admin/pages/{id}) and optional pagePassword (public 401 locked unless X-Page-Password). Socials allow whatsapp (https://wa.me/...).

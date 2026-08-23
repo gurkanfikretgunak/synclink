@@ -1,6 +1,7 @@
 package page
 
 import (
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,20 +24,22 @@ func ValidTheme(theme string) bool {
 }
 
 type Page struct {
-	ID          uuid.UUID
-	UserID      uuid.UUID
-	Slug        string
-	DisplayName string
-	Bio         string
-	AvatarURL   *string
-	Theme       string
-	AvatarShape string
-	AccentColor string
-	Background  string
-	Motion      string
-	Socials     []Social
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID           uuid.UUID
+	UserID       uuid.UUID
+	Slug         string
+	DisplayName  string
+	Bio          string
+	AvatarURL    *string
+	Theme        string
+	AvatarShape  string
+	AccentColor  string
+	Background   string
+	Motion       string
+	Socials      []Social
+	Verified     bool
+	PagePassword *string
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 type Link struct {
@@ -49,24 +52,38 @@ type Link struct {
 	Active        bool
 	Clicks        int
 	LastClickedAt *time.Time
+	Featured      bool
+	ThumbnailURL  *string
+	StartsAt      *time.Time
+	EndsAt        *time.Time
+	Sensitive     bool
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
 
+type Subscriber struct {
+	ID        uuid.UUID
+	PageID    uuid.UUID
+	Email     string
+	CreatedAt time.Time
+}
+
 type PageDTO struct {
-	ID          uuid.UUID `json:"id"`
-	Slug        string    `json:"slug"`
-	DisplayName string    `json:"displayName"`
-	Bio         string    `json:"bio"`
-	AvatarURL   *string   `json:"avatarUrl"`
-	Theme       string    `json:"theme"`
-	AvatarShape string    `json:"avatarShape"`
-	AccentColor string    `json:"accentColor"`
-	Background  string    `json:"background"`
-	Motion      string    `json:"motion"`
-	Socials     []Social  `json:"socials"`
-	CreatedAt   time.Time `json:"createdAt"`
-	UpdatedAt   time.Time `json:"updatedAt"`
+	ID           uuid.UUID `json:"id"`
+	Slug         string    `json:"slug"`
+	DisplayName  string    `json:"displayName"`
+	Bio          string    `json:"bio"`
+	AvatarURL    *string   `json:"avatarUrl"`
+	Theme        string    `json:"theme"`
+	AvatarShape  string    `json:"avatarShape"`
+	AccentColor  string    `json:"accentColor"`
+	Background   string    `json:"background"`
+	Motion       string    `json:"motion"`
+	Socials      []Social  `json:"socials"`
+	Verified     bool      `json:"verified"`
+	PagePassword *string   `json:"pagePassword"`
+	CreatedAt    time.Time `json:"createdAt"`
+	UpdatedAt    time.Time `json:"updatedAt"`
 }
 
 type LinkDTO struct {
@@ -78,6 +95,11 @@ type LinkDTO struct {
 	Active        bool       `json:"active"`
 	Clicks        int        `json:"clicks"`
 	LastClickedAt *time.Time `json:"lastClickedAt"`
+	Featured      bool       `json:"featured"`
+	ThumbnailURL  *string    `json:"thumbnailUrl"`
+	StartsAt      *time.Time `json:"startsAt"`
+	EndsAt        *time.Time `json:"endsAt"`
+	Sensitive     bool       `json:"sensitive"`
 	CreatedAt     time.Time  `json:"createdAt"`
 	UpdatedAt     time.Time  `json:"updatedAt"`
 }
@@ -90,6 +112,11 @@ type PublicLink struct {
 	Order         int        `json:"order"`
 	Clicks        int        `json:"clicks"`
 	LastClickedAt *time.Time `json:"lastClickedAt"`
+	Featured      bool       `json:"featured"`
+	ThumbnailURL  *string    `json:"thumbnailUrl"`
+	StartsAt      *time.Time `json:"startsAt"`
+	EndsAt        *time.Time `json:"endsAt"`
+	Sensitive     bool       `json:"sensitive"`
 }
 
 type PublicPage struct {
@@ -103,7 +130,14 @@ type PublicPage struct {
 	Background  string       `json:"background"`
 	Motion      string       `json:"motion"`
 	Socials     []Social     `json:"socials"`
+	Verified    bool         `json:"verified"`
 	Links       []PublicLink `json:"links"`
+}
+
+type SubscriberDTO struct {
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type MyStatsLink struct {
@@ -119,30 +153,41 @@ type MyStats struct {
 }
 
 type UpsertPageInput struct {
-	Slug        string   `json:"slug"`
-	DisplayName string   `json:"displayName"`
-	Bio         string   `json:"bio"`
-	AvatarURL   *string  `json:"avatarUrl"`
-	Theme       string   `json:"theme"`
-	AvatarShape string   `json:"avatarShape"`
-	AccentColor string   `json:"accentColor"`
-	Background  string   `json:"background"`
-	Motion      string   `json:"motion"`
-	Socials     []Social `json:"socials"`
+	Slug         string   `json:"slug"`
+	DisplayName  string   `json:"displayName"`
+	Bio          string   `json:"bio"`
+	AvatarURL    *string  `json:"avatarUrl"`
+	Theme        string   `json:"theme"`
+	AvatarShape  string   `json:"avatarShape"`
+	AccentColor  string   `json:"accentColor"`
+	Background   string   `json:"background"`
+	Motion       string   `json:"motion"`
+	Socials      []Social `json:"socials"`
+	PagePassword *string  `json:"pagePassword"`
 }
 
 type CreateLinkInput struct {
-	Title  string  `json:"title"`
-	URL    string  `json:"url"`
-	Icon   *string `json:"icon"`
-	Active *bool   `json:"active"`
+	Title        string     `json:"title"`
+	URL          string     `json:"url"`
+	Icon         *string    `json:"icon"`
+	Active       *bool      `json:"active"`
+	Featured     *bool      `json:"featured"`
+	ThumbnailURL *string    `json:"thumbnailUrl"`
+	StartsAt     *time.Time `json:"startsAt"`
+	EndsAt       *time.Time `json:"endsAt"`
+	Sensitive    *bool      `json:"sensitive"`
 }
 
 type UpdateLinkInput struct {
-	Title  *string `json:"title"`
-	URL    *string `json:"url"`
-	Icon   *string `json:"icon"`
-	Active *bool   `json:"active"`
+	Title        *string    `json:"title"`
+	URL          *string    `json:"url"`
+	Icon         *string    `json:"icon"`
+	Active       *bool      `json:"active"`
+	Featured     *bool      `json:"featured"`
+	ThumbnailURL *string    `json:"thumbnailUrl"`
+	StartsAt     *time.Time `json:"startsAt"`
+	EndsAt       *time.Time `json:"endsAt"`
+	Sensitive    *bool      `json:"sensitive"`
 }
 
 func ToPageDTO(p *Page) PageDTO {
@@ -150,7 +195,7 @@ func ToPageDTO(p *Page) PageDTO {
 		ID: p.ID, Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
-		Socials:   copySocials(p.Socials),
+		Socials: copySocials(p.Socials), Verified: p.Verified, PagePassword: copyStr(p.PagePassword),
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
@@ -159,8 +204,32 @@ func ToLinkDTO(l *Link) LinkDTO {
 	return LinkDTO{
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon,
 		Order: l.Order, Active: l.Active, Clicks: l.Clicks, LastClickedAt: l.LastClickedAt,
+		Featured: l.Featured, ThumbnailURL: l.ThumbnailURL, StartsAt: l.StartsAt, EndsAt: l.EndsAt, Sensitive: l.Sensitive,
 		CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
 	}
+}
+
+func ToPublicLink(l *Link) PublicLink {
+	return PublicLink{
+		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order,
+		Clicks: l.Clicks, LastClickedAt: l.LastClickedAt,
+		Featured: l.Featured, ThumbnailURL: l.ThumbnailURL, StartsAt: l.StartsAt, EndsAt: l.EndsAt, Sensitive: l.Sensitive,
+	}
+}
+
+func ToSubscriberDTO(s *Subscriber) SubscriberDTO {
+	return SubscriberDTO{ID: s.ID, Email: s.Email, CreatedAt: s.CreatedAt}
+}
+
+func LinkInSchedule(l *Link, now time.Time) bool {
+	now = now.UTC()
+	if l.StartsAt != nil && now.Before(l.StartsAt.UTC()) {
+		return false
+	}
+	if l.EndsAt != nil && now.After(l.EndsAt.UTC()) {
+		return false
+	}
+	return true
 }
 
 func NormalizeLook(shape, accent, bg, motion string) (string, string, string, string) {
@@ -183,4 +252,23 @@ func NormalizeLook(shape, accent, bg, motion string) (string, string, string, st
 		motion = "subtle"
 	}
 	return shape, accent, bg, motion
+}
+
+func copyStr(in *string) *string {
+	if in == nil {
+		return nil
+	}
+	v := *in
+	return &v
+}
+
+func normalizeOptionalString(in *string) *string {
+	if in == nil {
+		return nil
+	}
+	v := strings.TrimSpace(*in)
+	if v == "" {
+		return nil
+	}
+	return &v
 }

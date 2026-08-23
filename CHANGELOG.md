@@ -3,6 +3,19 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.9.0] - 2026-08-23
+
+### Added
+- Email capture: `subscribers` table (`id`, `page_id`, `email`, `created_at`, unique `page_id+email`).
+- `POST /api/v1/public/pages/{slug}/subscribe` `{email}` → `201 {"ok":true}`; `400` invalid email; `404` missing page; `409` duplicate.
+- `GET /api/v1/me/subscribers` (JWT) → `[{id,email,createdAt}]`. Empty page is `[]`.
+- `DELETE /api/v1/me/subscribers/{id}` (JWT) → `204`.
+- Link extras on `Link` / `LinkDTO` / public links: `featured`, `thumbnailUrl`, `startsAt`, `endsAt`, `sensitive`. Create/Update accept them. Public GET omits inactive and out-of-window links (`startsAt` in the future or `endsAt` in the past).
+- Page extras: `verified` (default false; owner PUT cannot set it). `PATCH /api/v1/admin/pages/{id}` `{verified}` (admin JWT).
+- Optional `pagePassword` on owner GET/PUT `/me/page`. If set, public GET `/public/pages/{slug}` returns `401 {"error":"locked"}` unless `X-Page-Password` matches. Public payload never includes the password.
+- Social network `whatsapp` (`https://wa.me/...`).
+- SQLite ALTER for new page/link columns plus `subscribers` table.
+
 ## [0.8.2] - 2026-08-23
 
 ### Added

@@ -29,7 +29,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Page-Password"},
 		AllowCredentials: false,
 	}))
 	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +42,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 		r.Post("/auth/reset-password", s.resetPassword)
 		r.Get("/public/pages/{slug}", s.publicPage)
 		r.Post("/public/pages/{slug}/links/{id}/click", s.publicClick)
+		r.Post("/public/pages/{slug}/subscribe", s.publicSubscribe)
 		r.Get("/public/settings", s.publicSettings)
 		r.Group(func(r chi.Router) {
 			r.Use(s.jwt)
@@ -55,6 +56,8 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 			r.Put("/me/page/links/reorder", s.reorder)
 			r.Patch("/me/page/links/{id}", s.updateLink)
 			r.Delete("/me/page/links/{id}", s.deleteLink)
+			r.Get("/me/subscribers", s.listSubscribers)
+			r.Delete("/me/subscribers/{id}", s.deleteSubscriber)
 			r.Get("/admin/me", s.adminMe)
 			r.Get("/admin/users", s.adminUsers)
 			r.Patch("/admin/users/{id}", s.adminPatchUser)
@@ -62,6 +65,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 			r.Get("/admin/settings", s.adminSettings)
 			r.Put("/admin/settings", s.adminPutSettings)
 			r.Get("/admin/pages", s.adminPages)
+			r.Patch("/admin/pages/{id}", s.adminPatchPage)
 			r.Get("/admin/stats", s.adminStats)
 		})
 	})
@@ -172,12 +176,67 @@ func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) publicPage(w http.ResponseWriter, r *http.Request) {
-	p, err := s.pages.GetPublicPage(r.Context(), chi.URLParam(r, "slug"))
+	p, err := s.pages.GetPublicPageWithPassword(r.Context(), chi.URLParam(r, "slug"), r.Header.Get("X-Page-Password"))
+	if errors.Is(err, page.ErrLocked) {
+		writeJSON(w, 401, map[string]string{"error": "locked"})
+		return
+	}
 	if err != nil {
 		writeErr(w, err)
 		return
 	}
 	writeJSON(w, 200, p)
+}
+
+func (s *Server) publicSubscribe(w http.ResponseWriter, r *http.Request) {
+	var in struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid email"})
+		return
+	}
+	if err := s.pages.Subscribe(r.Context(), chi.URLParam(r, "slug"), in.Email); err != nil {
+		if errors.Is(err, page.ErrValidation) {
+			writeJSON(w, 400, map[string]string{"error": "invalid email"})
+			return
+		}
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 201, map[string]any{"ok": true})
+}
+
+func (s *Server) listSubscribers(w http.ResponseWriter, r *http.Request) {
+	id, ok := userID(r)
+	if !ok {
+		writeJSON(w, 401, map[string]string{"error": "not authenticated"})
+		return
+	}
+	subs, err := s.pages.ListMySubscribers(r.Context(), id)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 200, subs)
+}
+
+func (s *Server) deleteSubscriber(w http.ResponseWriter, r *http.Request) {
+	uid, ok := userID(r)
+	if !ok {
+		writeJSON(w, 401, map[string]string{"error": "not authenticated"})
+		return
+	}
+	sid, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid subscriber id"})
+		return
+	}
+	if err := s.pages.DeleteMySubscriber(r.Context(), uid, sid); err != nil {
+		writeErr(w, err)
+		return
+	}
+	w.WriteHeader(204)
 }
 
 func (s *Server) getPage(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/gurkanfikretgunak/synclink/backend/internal/auth"
 )
@@ -31,6 +32,8 @@ CREATE TABLE IF NOT EXISTS pages (
 	background TEXT NOT NULL DEFAULT 'cream',
 	motion TEXT NOT NULL DEFAULT 'subtle',
 	socials TEXT NOT NULL DEFAULT '[]',
+	verified INTEGER NOT NULL DEFAULT 0,
+	page_password TEXT,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
@@ -45,12 +48,28 @@ CREATE TABLE IF NOT EXISTS links (
 	active INTEGER NOT NULL DEFAULT 1,
 	clicks INTEGER NOT NULL DEFAULT 0,
 	last_clicked_at TEXT,
+	featured INTEGER NOT NULL DEFAULT 0,
+	thumbnail_url TEXT,
+	starts_at TEXT,
+	ends_at TEXT,
+	sensitive INTEGER NOT NULL DEFAULT 0,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_links_page_order ON links(page_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS subscribers (
+	id TEXT PRIMARY KEY,
+	page_id TEXT NOT NULL,
+	email TEXT NOT NULL,
+	created_at TEXT NOT NULL,
+	UNIQUE (page_id, email),
+	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_page ON subscribers(page_id);
 
 CREATE TABLE IF NOT EXISTS settings (
 	id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -68,14 +87,26 @@ func Migrate(db *sql.DB) error {
 	if _, err := db.Exec(schema); err != nil {
 		return err
 	}
-	if err := ensureLinksClicks(db); err != nil {
-		return err
+	alters := []struct {
+		table  string
+		column string
+		ddl    string
+	}{
+		{"links", "clicks", "clicks INTEGER NOT NULL DEFAULT 0"},
+		{"links", "last_clicked_at", "last_clicked_at TEXT"},
+		{"links", "featured", "featured INTEGER NOT NULL DEFAULT 0"},
+		{"links", "thumbnail_url", "thumbnail_url TEXT"},
+		{"links", "starts_at", "starts_at TEXT"},
+		{"links", "ends_at", "ends_at TEXT"},
+		{"links", "sensitive", "sensitive INTEGER NOT NULL DEFAULT 0"},
+		{"pages", "socials", "socials TEXT"},
+		{"pages", "verified", "verified INTEGER NOT NULL DEFAULT 0"},
+		{"pages", "page_password", "page_password TEXT"},
 	}
-	if err := ensureLinksLastClickedAt(db); err != nil {
-		return err
-	}
-	if err := ensurePagesSocials(db); err != nil {
-		return err
+	for _, a := range alters {
+		if err := ensureColumn(db, a.table, a.column, a.ddl); err != nil {
+			return err
+		}
 	}
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM settings`).Scan(&n); err != nil {
@@ -92,41 +123,15 @@ func Migrate(db *sql.DB) error {
 	return err
 }
 
-func ensureLinksClicks(db *sql.DB) error {
-	var name string
-	err := db.QueryRow(`SELECT name FROM pragma_table_info('links') WHERE name='clicks'`).Scan(&name)
+func ensureColumn(db *sql.DB, table, name, ddl string) error {
+	var got string
+	err := db.QueryRow(fmt.Sprintf(`SELECT name FROM pragma_table_info('%s') WHERE name=?`, table), name).Scan(&got)
 	if err == nil {
 		return nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
-	_, err = db.Exec(`ALTER TABLE links ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0`)
-	return err
-}
-
-func ensureLinksLastClickedAt(db *sql.DB) error {
-	var name string
-	err := db.QueryRow(`SELECT name FROM pragma_table_info('links') WHERE name='last_clicked_at'`).Scan(&name)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE links ADD COLUMN last_clicked_at TEXT`)
-	return err
-}
-
-func ensurePagesSocials(db *sql.DB) error {
-	var name string
-	err := db.QueryRow(`SELECT name FROM pragma_table_info('pages') WHERE name='socials'`).Scan(&name)
-	if err == nil {
-		return nil
-	}
-	if !errors.Is(err, sql.ErrNoRows) {
-		return err
-	}
-	_, err = db.Exec(`ALTER TABLE pages ADD COLUMN socials TEXT`)
+	_, err = db.Exec(`ALTER TABLE ` + table + ` ADD COLUMN ` + ddl)
 	return err
 }

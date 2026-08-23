@@ -131,3 +131,27 @@ func (s *Server) adminStats(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]any{"users": len(users), "pages": len(pages), "totalClicks": clicks})
 }
+
+func (s *Server) adminPatchPage(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	id, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid page id"})
+		return
+	}
+	var in struct {
+		Verified *bool `json:"verified"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil || in.Verified == nil {
+		writeJSON(w, 400, map[string]string{"error": "invalid JSON"})
+		return
+	}
+	p, err := s.pages.SetPageVerified(r.Context(), id, *in.Verified)
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	writeJSON(w, 200, p)
+}

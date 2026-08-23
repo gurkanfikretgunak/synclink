@@ -9,19 +9,21 @@ import (
 )
 
 type MemoryStore struct {
-	mu     sync.Mutex
-	pages  map[uuid.UUID]*Page
-	byUser map[uuid.UUID]uuid.UUID
-	bySlug map[string]uuid.UUID
-	links  map[uuid.UUID]*Link
+	mu          sync.Mutex
+	pages       map[uuid.UUID]*Page
+	byUser      map[uuid.UUID]uuid.UUID
+	bySlug      map[string]uuid.UUID
+	links       map[uuid.UUID]*Link
+	subscribers map[uuid.UUID]*Subscriber
 }
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		pages:  map[uuid.UUID]*Page{},
-		byUser: map[uuid.UUID]uuid.UUID{},
-		bySlug: map[string]uuid.UUID{},
-		links:  map[uuid.UUID]*Link{},
+		pages:       map[uuid.UUID]*Page{},
+		byUser:      map[uuid.UUID]uuid.UUID{},
+		bySlug:      map[string]uuid.UUID{},
+		links:       map[uuid.UUID]*Link{},
+		subscribers: map[uuid.UUID]*Subscriber{},
 	}
 }
 
@@ -33,9 +35,7 @@ func (m *MemoryStore) CreatePage(ctx context.Context, p *Page) error {
 	}
 	now := time.Now().UTC()
 	p.CreatedAt, p.UpdatedAt = now, now
-	cp := *p
-	cp.Socials = copySocials(p.Socials)
-	m.pages[p.ID] = &cp
+	m.pages[p.ID] = clonePage(p)
 	m.byUser[p.UserID] = p.ID
 	m.bySlug[p.Slug] = p.ID
 	return nil
@@ -52,9 +52,7 @@ func (m *MemoryStore) UpdatePage(ctx context.Context, p *Page) error {
 		delete(m.bySlug, old.Slug)
 	}
 	p.UpdatedAt = time.Now().UTC()
-	cp := *p
-	cp.Socials = copySocials(p.Socials)
-	m.pages[p.ID] = &cp
+	m.pages[p.ID] = clonePage(p)
 	m.bySlug[p.Slug] = p.ID
 	m.byUser[p.UserID] = p.ID
 	return nil
@@ -67,9 +65,7 @@ func (m *MemoryStore) GetPageByID(ctx context.Context, id uuid.UUID) (*Page, err
 	if !ok {
 		return nil, ErrNotFound
 	}
-	cp := *p
-	cp.Socials = copySocials(p.Socials)
-	return &cp, nil
+	return clonePage(p), nil
 }
 
 func (m *MemoryStore) GetPageByUserID(ctx context.Context, userID uuid.UUID) (*Page, error) {
@@ -79,9 +75,7 @@ func (m *MemoryStore) GetPageByUserID(ctx context.Context, userID uuid.UUID) (*P
 	if !ok {
 		return nil, ErrNotFound
 	}
-	cp := *m.pages[id]
-	cp.Socials = copySocials(cp.Socials)
-	return &cp, nil
+	return clonePage(m.pages[id]), nil
 }
 
 func (m *MemoryStore) GetPageBySlug(ctx context.Context, slug string) (*Page, error) {
@@ -91,9 +85,7 @@ func (m *MemoryStore) GetPageBySlug(ctx context.Context, slug string) (*Page, er
 	if !ok {
 		return nil, ErrNotFound
 	}
-	cp := *m.pages[id]
-	cp.Socials = copySocials(cp.Socials)
-	return &cp, nil
+	return clonePage(m.pages[id]), nil
 }
 
 func (m *MemoryStore) CreateLink(ctx context.Context, l *Link) error {
@@ -200,4 +192,62 @@ func (m *MemoryStore) SumClicks(ctx context.Context) (int, error) {
 		n += l.Clicks
 	}
 	return n, nil
+}
+
+func (m *MemoryStore) CreateSubscriber(ctx context.Context, s *Subscriber) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, existing := range m.subscribers {
+		if existing.PageID == s.PageID && existing.Email == s.Email {
+			return ErrConflict
+		}
+	}
+	s.CreatedAt = time.Now().UTC()
+	cp := *s
+	m.subscribers[s.ID] = &cp
+	return nil
+}
+
+func (m *MemoryStore) ListSubscribers(ctx context.Context, pageID uuid.UUID) ([]*Subscriber, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var out []*Subscriber
+	for _, s := range m.subscribers {
+		if s.PageID == pageID {
+			cp := *s
+			out = append(out, &cp)
+		}
+	}
+	for i := 0; i < len(out); i++ {
+		for j := i + 1; j < len(out); j++ {
+			if out[j].CreatedAt.After(out[i].CreatedAt) {
+				out[i], out[j] = out[j], out[i]
+			}
+		}
+	}
+	if out == nil {
+		out = []*Subscriber{}
+	}
+	return out, nil
+}
+
+func (m *MemoryStore) GetSubscriberByID(ctx context.Context, id uuid.UUID) (*Subscriber, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.subscribers[id]
+	if !ok {
+		return nil, ErrNotFound
+	}
+	cp := *s
+	return &cp, nil
+}
+
+func (m *MemoryStore) DeleteSubscriber(ctx context.Context, id uuid.UUID) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.subscribers[id]; !ok {
+		return ErrNotFound
+	}
+	delete(m.subscribers, id)
+	return nil
 }

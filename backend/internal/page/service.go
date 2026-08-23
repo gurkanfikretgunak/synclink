@@ -3,8 +3,10 @@ package page
 import (
 	"context"
 	"errors"
+	"net/mail"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -31,7 +33,22 @@ func isNotFound(err error) bool {
 	return errors.Is(err, ErrNotFound)
 }
 
+func normalizePagePassword(in *string) *string {
+	if in == nil {
+		return nil
+	}
+	v := strings.TrimSpace(*in)
+	if v == "" {
+		return nil
+	}
+	return &v
+}
+
 func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, error) {
+	return s.GetPublicPageWithPassword(ctx, slug, "")
+}
+
+func (s *Service) GetPublicPageWithPassword(ctx context.Context, slug, password string) (*PublicPage, error) {
 	normalized, err := normalizeSlug(slug)
 	if err != nil {
 		return nil, ErrNotFound
@@ -40,22 +57,28 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 	if err != nil {
 		return nil, ErrNotFound
 	}
+	if p.PagePassword != nil && *p.PagePassword != "" {
+		if password != *p.PagePassword {
+			return nil, ErrLocked
+		}
+	}
 	links, err := s.store.ListLinks(ctx, p.ID)
 	if err != nil {
 		return nil, err
 	}
+	now := time.Now().UTC()
 	out := make([]PublicLink, 0, len(links))
 	for _, l := range links {
-		if !l.Active {
+		if !l.Active || !LinkInSchedule(l, now) {
 			continue
 		}
-		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order, Clicks: l.Clicks, LastClickedAt: l.LastClickedAt})
+		out = append(out, ToPublicLink(l))
 	}
 	return &PublicPage{
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
-		Socials: copySocials(p.Socials), Links: out,
+		Socials: copySocials(p.Socials), Verified: p.Verified, Links: out,
 	}, nil
 }
 
@@ -73,6 +96,7 @@ func emptyPageDTO() PageDTO {
 		Background:  bg,
 		Motion:      motion,
 		Socials:     emptySocials(),
+		Verified:    false,
 	}
 }
 
@@ -103,6 +127,7 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 	}
 	shape, accent, bg, motion := NormalizeLook(strings.TrimSpace(in.AvatarShape), strings.TrimSpace(in.AccentColor), strings.TrimSpace(in.Background), strings.TrimSpace(in.Motion))
 	socials := NormalizeSocials(in.Socials)
+	pw := normalizePagePassword(in.PagePassword)
 	bySlug, slugErr := s.store.GetPageBySlug(ctx, slug)
 	if slugErr != nil && !isNotFound(slugErr) {
 		return nil, slugErr
@@ -125,6 +150,9 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		mine.Background = bg
 		mine.Motion = motion
 		mine.Socials = socials
+		if in.PagePassword != nil {
+			mine.PagePassword = pw
+		}
 		if err := s.store.UpdatePage(ctx, mine); err != nil {
 			return nil, err
 		}
@@ -136,9 +164,22 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		DisplayName: strings.TrimSpace(in.DisplayName),
 		Bio:         strings.TrimSpace(in.Bio), AvatarURL: in.AvatarURL, Theme: theme,
 		AvatarShape: shape, AccentColor: accent, Background: bg, Motion: motion,
-		Socials: socials,
+		Socials: socials, Verified: false, PagePassword: pw,
 	}
 	if err := s.store.CreatePage(ctx, p); err != nil {
+		return nil, err
+	}
+	dto := ToPageDTO(p)
+	return &dto, nil
+}
+
+func (s *Service) SetPageVerified(ctx context.Context, pageID uuid.UUID, verified bool) (*PageDTO, error) {
+	p, err := s.store.GetPageByID(ctx, pageID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	p.Verified = verified
+	if err := s.store.UpdatePage(ctx, p); err != nil {
 		return nil, err
 	}
 	dto := ToPageDTO(p)
@@ -172,6 +213,18 @@ func (s *Service) ListLinks(ctx context.Context, userID uuid.UUID) ([]LinkDTO, e
 	return out, nil
 }
 
+func applyCreateLinkExtras(l *Link, in CreateLinkInput) {
+	if in.Featured != nil {
+		l.Featured = *in.Featured
+	}
+	l.ThumbnailURL = normalizeOptionalString(in.ThumbnailURL)
+	l.StartsAt = in.StartsAt
+	l.EndsAt = in.EndsAt
+	if in.Sensitive != nil {
+		l.Sensitive = *in.Sensitive
+	}
+}
+
 func (s *Service) CreateLink(ctx context.Context, userID uuid.UUID, in CreateLinkInput) (*LinkDTO, error) {
 	p, err := s.requirePage(ctx, userID)
 	if err != nil {
@@ -192,6 +245,7 @@ func (s *Service) CreateLink(ctx context.Context, userID uuid.UUID, in CreateLin
 		ID: uuid.New(), PageID: p.ID, Title: strings.TrimSpace(in.Title),
 		URL: strings.TrimSpace(in.URL), Icon: in.Icon, Order: max + 1, Active: active,
 	}
+	applyCreateLinkExtras(l, in)
 	if err := s.store.CreateLink(ctx, l); err != nil {
 		return nil, err
 	}
@@ -219,6 +273,21 @@ func (s *Service) UpdateLink(ctx context.Context, userID, linkID uuid.UUID, in U
 	}
 	if in.Active != nil {
 		l.Active = *in.Active
+	}
+	if in.Featured != nil {
+		l.Featured = *in.Featured
+	}
+	if in.ThumbnailURL != nil {
+		l.ThumbnailURL = normalizeOptionalString(in.ThumbnailURL)
+	}
+	if in.StartsAt != nil {
+		l.StartsAt = in.StartsAt
+	}
+	if in.EndsAt != nil {
+		l.EndsAt = in.EndsAt
+	}
+	if in.Sensitive != nil {
+		l.Sensitive = *in.Sensitive
 	}
 	if err := s.store.UpdateLink(ctx, l); err != nil {
 		return nil, err
@@ -292,6 +361,13 @@ func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID
 	if err != nil {
 		return 0, ErrNotFound
 	}
+	l, err := s.store.GetLinkByID(ctx, linkID)
+	if err != nil || l.PageID != p.ID {
+		return 0, ErrNotFound
+	}
+	if !l.Active || !LinkInSchedule(l, time.Now().UTC()) {
+		return 0, ErrNotFound
+	}
 	return s.store.IncrementClicks(ctx, p.ID, linkID)
 }
 
@@ -310,4 +386,64 @@ func (s *Service) MyStats(ctx context.Context, userID uuid.UUID) (*MyStats, erro
 
 func (s *Service) SumClicks(ctx context.Context) (int, error) {
 	return s.store.SumClicks(ctx)
+}
+
+func normalizeSubscribeEmail(raw string) (string, error) {
+	email := strings.ToLower(strings.TrimSpace(raw))
+	if email == "" || strings.ContainsAny(email, " \t\n\r") {
+		return "", ErrValidation
+	}
+	addr, err := mail.ParseAddress(email)
+	if err != nil || addr.Address == "" || !strings.Contains(addr.Address, ".") {
+		return "", ErrValidation
+	}
+	return strings.ToLower(addr.Address), nil
+}
+
+func (s *Service) Subscribe(ctx context.Context, slug, email string) error {
+	normalized, err := normalizeSlug(slug)
+	if err != nil {
+		return ErrNotFound
+	}
+	p, err := s.store.GetPageBySlug(ctx, normalized)
+	if err != nil {
+		return ErrNotFound
+	}
+	addr, err := normalizeSubscribeEmail(email)
+	if err != nil {
+		return err
+	}
+	sub := &Subscriber{ID: uuid.New(), PageID: p.ID, Email: addr}
+	return s.store.CreateSubscriber(ctx, sub)
+}
+
+func (s *Service) ListMySubscribers(ctx context.Context, userID uuid.UUID) ([]SubscriberDTO, error) {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		if isNotFound(err) {
+			return []SubscriberDTO{}, nil
+		}
+		return nil, err
+	}
+	subs, err := s.store.ListSubscribers(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SubscriberDTO, 0, len(subs))
+	for _, sub := range subs {
+		out = append(out, ToSubscriberDTO(sub))
+	}
+	return out, nil
+}
+
+func (s *Service) DeleteMySubscriber(ctx context.Context, userID, subID uuid.UUID) error {
+	p, err := s.requirePage(ctx, userID)
+	if err != nil {
+		return err
+	}
+	sub, err := s.store.GetSubscriberByID(ctx, subID)
+	if err != nil || sub.PageID != p.ID {
+		return ErrNotFound
+	}
+	return s.store.DeleteSubscriber(ctx, sub.ID)
 }

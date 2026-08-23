@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS pages (
     background TEXT NOT NULL DEFAULT 'cream',
     motion TEXT NOT NULL DEFAULT 'subtle',
     socials TEXT NOT NULL DEFAULT '[]',
+    verified INTEGER NOT NULL DEFAULT 0,
+    page_password TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -35,12 +37,28 @@ CREATE TABLE IF NOT EXISTS links (
     active INTEGER NOT NULL DEFAULT 1,
     clicks INTEGER NOT NULL DEFAULT 0,
     last_clicked_at TEXT,
+    featured INTEGER NOT NULL DEFAULT 0,
+    thumbnail_url TEXT,
+    starts_at TEXT,
+    ends_at TEXT,
+    sensitive INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_links_page_order ON links(page_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS subscribers (
+    id TEXT PRIMARY KEY,
+    page_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    UNIQUE (page_id, email),
+    FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscribers_page ON subscribers(page_id);
 
 CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
