@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS pages (
 	socials TEXT NOT NULL DEFAULT '[]',
 	verified INTEGER NOT NULL DEFAULT 0,
 	page_password TEXT,
+	published_at TEXT,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL
 );
@@ -102,11 +103,15 @@ func Migrate(db *sql.DB) error {
 		{"pages", "socials", "socials TEXT"},
 		{"pages", "verified", "verified INTEGER NOT NULL DEFAULT 0"},
 		{"pages", "page_password", "page_password TEXT"},
+		{"pages", "published_at", "published_at TEXT"},
 	}
 	for _, a := range alters {
 		if err := ensureColumn(db, a.table, a.column, a.ddl); err != nil {
 			return err
 		}
+	}
+	if _, err := db.Exec(`UPDATE pages SET published_at = created_at WHERE published_at IS NULL OR published_at = ''`); err != nil {
+		return err
 	}
 	var n int
 	if err := db.QueryRow(`SELECT COUNT(*) FROM settings`).Scan(&n); err != nil {

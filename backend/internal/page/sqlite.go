@@ -59,12 +59,13 @@ func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 	var avatar sql.NullString
 	var socials sql.NullString
 	var password sql.NullString
+	var published sql.NullString
 	var verified int
 	var created, updated string
 	err := row.Scan(
 		&p.ID, &p.UserID, &p.Slug, &p.DisplayName, &p.Bio, &avatar, &p.Theme,
 		&p.AvatarShape, &p.AccentColor, &p.Background, &p.Motion, &socials,
-		&verified, &password, &created, &updated,
+		&verified, &password, &published, &created, &updated,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
@@ -82,6 +83,7 @@ func scanPage(row interface{ Scan(dest ...any) error }) (*Page, error) {
 		v := password.String
 		p.PagePassword = &v
 	}
+	p.PublishedAt = parseTimePtr(published)
 	p.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
 	p.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
 	return &p, nil
@@ -109,16 +111,19 @@ func encodeSocials(in []Social) string {
 func (s *SQLiteStore) CreatePage(ctx context.Context, p *Page) error {
 	now := time.Now().UTC()
 	p.CreatedAt, p.UpdatedAt = now, now
+	if p.PublishedAt == nil {
+		p.PublishedAt = &now
+	}
 	verified := 0
 	if p.Verified {
 		verified = 1
 	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		INSERT INTO pages (id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		p.ID.String(), p.UserID.String(), p.Slug, p.DisplayName, p.Bio, nullableStr(p.AvatarURL), p.Theme,
 		p.AvatarShape, p.AccentColor, p.Background, p.Motion, encodeSocials(p.Socials),
-		verified, nullableStr(p.PagePassword),
+		verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt),
 		p.CreatedAt.Format(time.RFC3339Nano), p.UpdatedAt.Format(time.RFC3339Nano),
 	)
 	if isUniqueErr(err) {
@@ -129,15 +134,19 @@ func (s *SQLiteStore) CreatePage(ctx context.Context, p *Page) error {
 
 func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 	p.UpdatedAt = time.Now().UTC()
+	if p.PublishedAt == nil {
+		now := p.UpdatedAt
+		p.PublishedAt = &now
+	}
 	verified := 0
 	if p.Verified {
 		verified = 1
 	}
 	res, err := s.db.ExecContext(ctx, `
-		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, socials=?, verified=?, page_password=?, updated_at=?, user_id=?
+		UPDATE pages SET slug=?, display_name=?, bio=?, avatar_url=?, theme=?, avatar_shape=?, accent_color=?, background=?, motion=?, socials=?, verified=?, page_password=?, published_at=?, updated_at=?, user_id=?
 		WHERE id=?`,
 		p.Slug, p.DisplayName, p.Bio, nullableStr(p.AvatarURL), p.Theme, p.AvatarShape, p.AccentColor, p.Background, p.Motion,
-		encodeSocials(p.Socials), verified, nullableStr(p.PagePassword), p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
+		encodeSocials(p.Socials), verified, nullableStr(p.PagePassword), nullableTime(p.PublishedAt), p.UpdatedAt.Format(time.RFC3339Nano), p.UserID.String(), p.ID.String(),
 	)
 	if err != nil {
 		if isUniqueErr(err) {
@@ -152,7 +161,7 @@ func (s *SQLiteStore) UpdatePage(ctx context.Context, p *Page) error {
 	return nil
 }
 
-const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, created_at, updated_at`
+const pageCols = `id, user_id, slug, display_name, bio, avatar_url, theme, avatar_shape, accent_color, background, motion, socials, verified, page_password, published_at, created_at, updated_at`
 
 func (s *SQLiteStore) GetPageByID(ctx context.Context, id uuid.UUID) (*Page, error) {
 	return scanPage(s.db.QueryRowContext(ctx, `SELECT `+pageCols+` FROM pages WHERE id=?`, id.String()))

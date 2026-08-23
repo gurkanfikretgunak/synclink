@@ -35,6 +35,9 @@ func (m *MemoryStore) CreatePage(ctx context.Context, p *Page) error {
 	}
 	now := time.Now().UTC()
 	p.CreatedAt, p.UpdatedAt = now, now
+	if p.PublishedAt == nil {
+		p.PublishedAt = &now
+	}
 	m.pages[p.ID] = clonePage(p)
 	m.byUser[p.UserID] = p.ID
 	m.bySlug[p.Slug] = p.ID
@@ -52,6 +55,10 @@ func (m *MemoryStore) UpdatePage(ctx context.Context, p *Page) error {
 		delete(m.bySlug, old.Slug)
 	}
 	p.UpdatedAt = time.Now().UTC()
+	if p.PublishedAt == nil {
+		now := p.UpdatedAt
+		p.PublishedAt = &now
+	}
 	m.pages[p.ID] = clonePage(p)
 	m.bySlug[p.Slug] = p.ID
 	m.byUser[p.UserID] = p.ID

@@ -38,6 +38,7 @@ type Page struct {
 	Socials      []Social
 	Verified     bool
 	PagePassword *string
+	PublishedAt  *time.Time
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -81,9 +82,10 @@ type PageDTO struct {
 	Motion       string    `json:"motion"`
 	Socials      []Social  `json:"socials"`
 	Verified     bool      `json:"verified"`
-	PagePassword *string   `json:"pagePassword"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	PagePassword *string    `json:"pagePassword"`
+	PublishedAt  *time.Time `json:"publishedAt"`
+	CreatedAt    time.Time  `json:"createdAt"`
+	UpdatedAt    time.Time  `json:"updatedAt"`
 }
 
 type LinkDTO struct {
@@ -131,6 +133,7 @@ type PublicPage struct {
 	Motion      string       `json:"motion"`
 	Socials     []Social     `json:"socials"`
 	Verified    bool         `json:"verified"`
+	PublishedAt *time.Time   `json:"publishedAt"`
 	Links       []PublicLink `json:"links"`
 }
 
@@ -196,7 +199,7 @@ func ToPageDTO(p *Page) PageDTO {
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
 		Socials: copySocials(p.Socials), Verified: p.Verified, PagePassword: copyStr(p.PagePassword),
-		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
+		PublishedAt: copyTime(p.PublishedAt), CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
 
@@ -255,6 +258,14 @@ func NormalizeLook(shape, accent, bg, motion string) (string, string, string, st
 }
 
 func copyStr(in *string) *string {
+	if in == nil {
+		return nil
+	}
+	v := *in
+	return &v
+}
+
+func copyTime(in *time.Time) *time.Time {
 	if in == nil {
 		return nil
 	}

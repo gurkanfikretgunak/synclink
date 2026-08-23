@@ -44,3 +44,5 @@ Link extras (create/update and public): featured, thumbnailUrl, startsAt, endsAt
 Page extras: verified (default false; owner cannot self-verify). PATCH /api/v1/admin/pages/{id} `{verified}` admin JWT. Optional pagePassword on owner page; public GET returns 401 `{error:locked}` without matching X-Page-Password.
 
 SQLite: subscribers table; ALTER pages.verified, pages.page_password, links.featured/thumbnail_url/starts_at/ends_at/sensitive.
+
+0.9.1: publishedAt on GET/PUT /me/page and public GET /public/pages/{slug} (RFC3339). Set once on first create. SQLite pages.published_at; migrate backfills from created_at.

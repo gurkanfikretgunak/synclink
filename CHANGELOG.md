@@ -3,6 +3,14 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.9.1] - 2026-08-23
+
+### App
+- Public `/{slug}` and studio Share card: QR for the live URL (copy + PNG). No new API.
+
+### Added
+- `publishedAt` on owner GET/PUT `/api/v1/me/page` and public GET `/api/v1/public/pages/{slug}` (RFC3339; null only for unsaved empty page). Set once on first create; later upserts keep it. SQLite `pages.published_at`; existing rows backfill from `created_at`.
+
 ## [0.9.0] - 2026-08-23
 
 ### App

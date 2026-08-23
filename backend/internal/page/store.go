@@ -45,6 +45,7 @@ func clonePage(p *Page) *Page {
 	cp.Socials = copySocials(p.Socials)
 	cp.PagePassword = copyStr(p.PagePassword)
 	cp.AvatarURL = copyStr(p.AvatarURL)
+	cp.PublishedAt = copyTime(p.PublishedAt)
 	return &cp
 }
 

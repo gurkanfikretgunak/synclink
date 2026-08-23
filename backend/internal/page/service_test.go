@@ -485,3 +485,39 @@ func TestPagePasswordAndVerified(t *testing.T) {
 		t.Fatalf("unlocked after clear %v", err)
 	}
 }
+
+func TestPublishedAtSetOnce(t *testing.T) {
+	svc := NewService(NewMemoryStore())
+	ctx := context.Background()
+	u := uuid.New()
+	first, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "pub", DisplayName: "P"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.PublishedAt == nil {
+		t.Fatal("create should set publishedAt")
+	}
+	got := *first.PublishedAt
+	time.Sleep(2 * time.Millisecond)
+	second, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "pub", DisplayName: "P2"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second.PublishedAt == nil || !second.PublishedAt.Equal(got) {
+		t.Fatalf("publishedAt should stick, first=%v second=%v", got, second.PublishedAt)
+	}
+	pub, err := svc.GetPublicPage(ctx, "pub")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pub.PublishedAt == nil || !pub.PublishedAt.Equal(got) {
+		t.Fatalf("public publishedAt %#v", pub.PublishedAt)
+	}
+	empty, err := svc.GetMyPage(ctx, uuid.New())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if empty.PublishedAt != nil {
+		t.Fatalf("unsaved page publishedAt should be null, got %#v", empty.PublishedAt)
+	}
+}

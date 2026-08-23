@@ -78,7 +78,7 @@ func (s *Service) GetPublicPageWithPassword(ctx context.Context, slug, password 
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,
 		AvatarURL: p.AvatarURL, Theme: p.Theme, AvatarShape: p.AvatarShape,
 		AccentColor: p.AccentColor, Background: p.Background, Motion: p.Motion,
-		Socials: copySocials(p.Socials), Verified: p.Verified, Links: out,
+		Socials: copySocials(p.Socials), Verified: p.Verified, PublishedAt: copyTime(p.PublishedAt), Links: out,
 	}, nil
 }
 
@@ -152,6 +152,10 @@ func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPag
 		mine.Socials = socials
 		if in.PagePassword != nil {
 			mine.PagePassword = pw
+		}
+		if mine.PublishedAt == nil {
+			now := time.Now().UTC()
+			mine.PublishedAt = &now
 		}
 		if err := s.store.UpdatePage(ctx, mine); err != nil {
 			return nil, err
