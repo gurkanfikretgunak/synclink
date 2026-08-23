@@ -49,7 +49,7 @@ func (s *Service) GetPublicPage(ctx context.Context, slug string) (*PublicPage, 
 		if !l.Active {
 			continue
 		}
-		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order, Clicks: l.Clicks})
+		out = append(out, PublicLink{ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon, Order: l.Order, Clicks: l.Clicks, LastClickedAt: l.LastClickedAt})
 	}
 	return &PublicPage{
 		Slug: p.Slug, DisplayName: p.DisplayName, Bio: p.Bio,

@@ -39,16 +39,17 @@ type Page struct {
 }
 
 type Link struct {
-	ID        uuid.UUID
-	PageID    uuid.UUID
-	Title     string
-	URL       string
-	Icon      *string
-	Order     int
-	Active    bool
-	Clicks    int
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID            uuid.UUID
+	PageID        uuid.UUID
+	Title         string
+	URL           string
+	Icon          *string
+	Order         int
+	Active        bool
+	Clicks        int
+	LastClickedAt *time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 type PageDTO struct {
@@ -67,24 +68,26 @@ type PageDTO struct {
 }
 
 type LinkDTO struct {
-	ID        uuid.UUID `json:"id"`
-	Title     string    `json:"title"`
-	URL       string    `json:"url"`
-	Icon      *string   `json:"icon"`
-	Order     int       `json:"order"`
-	Active    bool      `json:"active"`
-	Clicks    int       `json:"clicks"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	ID            uuid.UUID  `json:"id"`
+	Title         string     `json:"title"`
+	URL           string     `json:"url"`
+	Icon          *string    `json:"icon"`
+	Order         int        `json:"order"`
+	Active        bool       `json:"active"`
+	Clicks        int        `json:"clicks"`
+	LastClickedAt *time.Time `json:"lastClickedAt"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	UpdatedAt     time.Time  `json:"updatedAt"`
 }
 
 type PublicLink struct {
-	ID     uuid.UUID `json:"id"`
-	Title  string    `json:"title"`
-	URL    string    `json:"url"`
-	Icon   *string   `json:"icon"`
-	Order  int       `json:"order"`
-	Clicks int       `json:"clicks"`
+	ID            uuid.UUID  `json:"id"`
+	Title         string     `json:"title"`
+	URL           string     `json:"url"`
+	Icon          *string    `json:"icon"`
+	Order         int        `json:"order"`
+	Clicks        int        `json:"clicks"`
+	LastClickedAt *time.Time `json:"lastClickedAt"`
 }
 
 type PublicPage struct {
@@ -150,7 +153,8 @@ func ToPageDTO(p *Page) PageDTO {
 func ToLinkDTO(l *Link) LinkDTO {
 	return LinkDTO{
 		ID: l.ID, Title: l.Title, URL: l.URL, Icon: l.Icon,
-		Order: l.Order, Active: l.Active, Clicks: l.Clicks, CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
+		Order: l.Order, Active: l.Active, Clicks: l.Clicks, LastClickedAt: l.LastClickedAt,
+		CreatedAt: l.CreatedAt, UpdatedAt: l.UpdatedAt,
 	}
 }
 

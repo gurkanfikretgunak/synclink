@@ -50,6 +50,16 @@ func TestPublicClickIncrementsAnd404(t *testing.T) {
 	if err := json.Unmarshal(cw.Body.Bytes(), &link); err != nil {
 		t.Fatal(err)
 	}
+	if link.LastClickedAt != nil {
+		t.Fatalf("never-clicked lastClickedAt should be null, got %#v body=%s", link.LastClickedAt, cw.Body.String())
+	}
+	var created map[string]any
+	if err := json.Unmarshal(cw.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if v, ok := created["lastClickedAt"]; !ok || v != nil {
+		t.Fatalf("never-clicked json lastClickedAt should be null, got %#v", created)
+	}
 
 	click := func() *httptest.ResponseRecorder {
 		req := httptest.NewRequest(http.MethodPost, "/api/v1/public/pages/demo/links/"+link.ID.String()+"/click", nil)
@@ -80,6 +90,18 @@ func TestPublicClickIncrementsAnd404(t *testing.T) {
 	var pub page.PublicPage
 	if err := json.Unmarshal(pubw.Body.Bytes(), &pub); err != nil || len(pub.Links) != 1 || pub.Links[0].Clicks != 2 {
 		t.Fatalf("public %#v err=%v body=%s", pub, err, pubw.Body.String())
+	}
+	if pub.Links[0].LastClickedAt == nil {
+		t.Fatalf("public lastClickedAt should be set after click, body=%s", pubw.Body.String())
+	}
+	var pubRaw map[string]any
+	if err := json.Unmarshal(pubw.Body.Bytes(), &pubRaw); err != nil {
+		t.Fatal(err)
+	}
+	linksRaw, _ := pubRaw["links"].([]any)
+	row, _ := linksRaw[0].(map[string]any)
+	if ts, ok := row["lastClickedAt"].(string); !ok || ts == "" {
+		t.Fatalf("public json lastClickedAt should be RFC3339, got %#v", row)
 	}
 
 	bad := httptest.NewRecorder()

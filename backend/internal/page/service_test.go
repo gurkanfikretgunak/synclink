@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -123,6 +124,12 @@ func TestRecordClick(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if on.LastClickedAt != nil {
+		t.Fatalf("never-clicked lastClickedAt should be null, got %#v", on.LastClickedAt)
+	}
+	if hidden.LastClickedAt != nil {
+		t.Fatalf("inactive never-clicked lastClickedAt should be null, got %#v", hidden.LastClickedAt)
+	}
 	n, err := svc.RecordClick(ctx, "gurkan", on.ID)
 	if err != nil || n != 1 {
 		t.Fatalf("first click n=%d err=%v", n, err)
@@ -159,6 +166,21 @@ func TestRecordClick(t *testing.T) {
 	}
 	if got != 2 {
 		t.Fatalf("studio clicks %d", got)
+	}
+	var last *time.Time
+	for _, l := range links {
+		if l.ID == on.ID {
+			last = l.LastClickedAt
+		}
+		if l.ID == hidden.ID && l.LastClickedAt != nil {
+			t.Fatalf("never-clicked hidden lastClickedAt %#v", l.LastClickedAt)
+		}
+	}
+	if last == nil {
+		t.Fatal("after click lastClickedAt should be set")
+	}
+	if pub.Links[0].LastClickedAt == nil {
+		t.Fatal("public lastClickedAt should be set after click")
 	}
 }
 

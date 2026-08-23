@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS links (
 	sort_order INTEGER NOT NULL DEFAULT 0,
 	active INTEGER NOT NULL DEFAULT 1,
 	clicks INTEGER NOT NULL DEFAULT 0,
+	last_clicked_at TEXT,
 	created_at TEXT NOT NULL,
 	updated_at TEXT NOT NULL,
 	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
@@ -67,6 +68,9 @@ func Migrate(db *sql.DB) error {
 		return err
 	}
 	if err := ensureLinksClicks(db); err != nil {
+		return err
+	}
+	if err := ensureLinksLastClickedAt(db); err != nil {
 		return err
 	}
 	var n int
@@ -94,5 +98,18 @@ func ensureLinksClicks(db *sql.DB) error {
 		return err
 	}
 	_, err = db.Exec(`ALTER TABLE links ADD COLUMN clicks INTEGER NOT NULL DEFAULT 0`)
+	return err
+}
+
+func ensureLinksLastClickedAt(db *sql.DB) error {
+	var name string
+	err := db.QueryRow(`SELECT name FROM pragma_table_info('links') WHERE name='last_clicked_at'`).Scan(&name)
+	if err == nil {
+		return nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	_, err = db.Exec(`ALTER TABLE links ADD COLUMN last_clicked_at TEXT`)
 	return err
 }

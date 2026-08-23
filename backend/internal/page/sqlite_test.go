@@ -25,6 +25,9 @@ func TestSQLitePersistAndClick(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if link.LastClickedAt != nil {
+		t.Fatalf("never-clicked lastClickedAt should be null, got %#v", link.LastClickedAt)
+	}
 	n, err := svc.RecordClick(ctx, "gurkan", link.ID)
 	if err != nil || n != 1 {
 		t.Fatalf("click n=%d err=%v", n, err)
@@ -32,6 +35,9 @@ func TestSQLitePersistAndClick(t *testing.T) {
 	got, err := svc.GetPublicPage(ctx, "gurkan")
 	if err != nil || len(got.Links) != 1 || got.Links[0].Clicks != 1 {
 		t.Fatalf("persist public %#v err=%v", got, err)
+	}
+	if got.Links[0].LastClickedAt == nil {
+		t.Fatal("after click lastClickedAt should be set")
 	}
 	if _, err := svc.RecordClick(ctx, "nope", link.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing page %v", err)

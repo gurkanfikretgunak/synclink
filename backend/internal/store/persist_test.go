@@ -102,6 +102,9 @@ func TestSQLiteSurvivesReopen(t *testing.T) {
 	if err != nil || pub3.Links[0].Clicks != 1 {
 		t.Fatalf("clicks after reopen %#v err=%v", pub3, err)
 	}
+	if pub3.Links[0].LastClickedAt == nil {
+		t.Fatalf("lastClickedAt after reopen %#v", pub3)
+	}
 	if auth3.Settings().SiteName != "Persisted" {
 		t.Fatalf("settings after reopen %#v", auth3.Settings())
 	}

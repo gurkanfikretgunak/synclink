@@ -180,8 +180,10 @@ func (m *MemoryStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.U
 	if !ok || l.PageID != pageID || !l.Active {
 		return 0, ErrNotFound
 	}
+	now := time.Now().UTC()
 	l.Clicks++
-	l.UpdatedAt = time.Now().UTC()
+	l.LastClickedAt = &now
+	l.UpdatedAt = now
 	return l.Clicks, nil
 }
 

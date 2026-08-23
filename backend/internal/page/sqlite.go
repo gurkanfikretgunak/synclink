@@ -131,9 +131,10 @@ func (s *SQLiteStore) ListPages(ctx context.Context) ([]*Page, error) {
 func scanLink(row interface{ Scan(dest ...any) error }) (*Link, error) {
 	var l Link
 	var icon sql.NullString
+	var lastClicked sql.NullString
 	var active int
 	var created, updated string
-	err := row.Scan(&l.ID, &l.PageID, &l.Title, &l.URL, &icon, &l.Order, &active, &l.Clicks, &created, &updated)
+	err := row.Scan(&l.ID, &l.PageID, &l.Title, &l.URL, &icon, &l.Order, &active, &l.Clicks, &lastClicked, &created, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -145,6 +146,13 @@ func scanLink(row interface{ Scan(dest ...any) error }) (*Link, error) {
 		l.Icon = &v
 	}
 	l.Active = active != 0
+	if lastClicked.Valid && lastClicked.String != "" {
+		if ts, err := time.Parse(time.RFC3339Nano, lastClicked.String); err == nil {
+			l.LastClickedAt = &ts
+		} else if ts, err := time.Parse(time.RFC3339, lastClicked.String); err == nil {
+			l.LastClickedAt = &ts
+		}
+	}
 	l.CreatedAt, _ = time.Parse(time.RFC3339Nano, created)
 	l.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updated)
 	return &l, nil
@@ -161,10 +169,14 @@ func (s *SQLiteStore) CreateLink(ctx context.Context, l *Link) error {
 	if l.Active {
 		active = 1
 	}
+	var lastClicked any
+	if l.LastClickedAt != nil {
+		lastClicked = l.LastClickedAt.UTC().Format(time.RFC3339Nano)
+	}
 	_, err := s.db.ExecContext(ctx, `
-		INSERT INTO links (id, page_id, title, url, icon, sort_order, active, clicks, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		l.ID.String(), l.PageID.String(), l.Title, l.URL, icon, l.Order, active, l.Clicks,
+		INSERT INTO links (id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		l.ID.String(), l.PageID.String(), l.Title, l.URL, icon, l.Order, active, l.Clicks, lastClicked,
 		l.CreatedAt.Format(time.RFC3339Nano), l.UpdatedAt.Format(time.RFC3339Nano),
 	)
 	return err
@@ -199,7 +211,7 @@ func (s *SQLiteStore) DeleteLink(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const linkCols = `id, page_id, title, url, icon, sort_order, active, clicks, created_at, updated_at`
+const linkCols = `id, page_id, title, url, icon, sort_order, active, clicks, last_clicked_at, created_at, updated_at`
 
 func (s *SQLiteStore) GetLinkByID(ctx context.Context, id uuid.UUID) (*Link, error) {
 	return scanLink(s.db.QueryRowContext(ctx, `SELECT `+linkCols+` FROM links WHERE id=?`, id.String()))
@@ -265,11 +277,12 @@ func (s *SQLiteStore) Reorder(ctx context.Context, pageID uuid.UUID, ids []uuid.
 
 func (s *SQLiteStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error) {
 	var n int
+	now := time.Now().UTC().Format(time.RFC3339Nano)
 	err := s.db.QueryRowContext(ctx, `
-		UPDATE links SET clicks = clicks + 1
+		UPDATE links SET clicks = clicks + 1, last_clicked_at = ?, updated_at = ?
 		WHERE id=? AND page_id=? AND active=1
 		RETURNING clicks`,
-		linkID.String(), pageID.String(),
+		now, now, linkID.String(), pageID.String(),
 	).Scan(&n)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound

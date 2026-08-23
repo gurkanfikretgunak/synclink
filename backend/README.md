@@ -27,6 +27,7 @@ Look fields on page: avatarShape, accentColor, background, motion.
 Admin/public settings also carry metaTitle, metaDescription, ogImage, favicon, themeColor, heroTitle, heroSubtitle, heroCta, heroCtaHref, heroImage, demoSlug, nav [{label,href}].
 
 Public click: POST /api/v1/public/pages/{slug}/links/{id}/click increments clicks for that active link. Links expose clicks (studio LinkDTO and public links).
+Links also expose lastClickedAt (RFC3339 or null if never clicked); IncrementClicks sets it in memory and SQLite.
 
 Studio stats: GET /api/v1/me/stats (JWT) returns totalClicks plus each link id/title/clicks/url. Missing page is 200 {totalClicks:0,links:[]}.
 Admin stats: GET /api/v1/admin/stats includes users, pages, and totalClicks (SumClicks on memory and SQLite).

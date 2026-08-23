@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.8.1] - 2026-08-23
+
+### Added
+- `lastClickedAt` on `Link`, `LinkDTO`, and public links (JSON camelCase; null if never clicked). Set by `RecordClick` / `IncrementClicks` in memory and SQLite (`last_clicked_at` TEXT nullable, ALTER on migrate).
+
 ## [0.8.0] - 2026-08-22
 
 ### Added
