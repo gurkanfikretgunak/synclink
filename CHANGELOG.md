@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.10.2] - 2026-08-24
+
+### App
+- Public `/{slug}` sets document title, description, and og/twitter image from `displayName` / `bio` / avatar (or cover). Locked pages stay noindex. No new API.
+
 ## [0.10.1] - 2026-08-23
 
 ### App
@@ -69,7 +74,7 @@ All notable changes to SyncLink live in this file.
 ### Added
 - Studio shows total clicks from GET /api/v1/me/stats (0 if the route is missing). Per-link counts merge onto the preview.
 - Admin overview has a Clicks card from GET /api/v1/admin/stats `totalClicks`.
-- GET /api/v1/me/stats (JWT): 200 `{"totalClicks":N,"links":[{"id":"<uuid>","title":"...","clicks":N,"url":"..."}]}`. No page or empty links: `{"totalClicks":0,"links":[]}`.
+- GET /api/v1/me/stats (JWT): 200 `{"totalClicks":N,"links":[{"id":"uuid","title":"...","clicks":N,"url":"..."}]}`. No page or empty links: `{"totalClicks":0,"links":[]}`.
 - GET /api/v1/admin/stats now includes click sum as `totalClicks`: `{"users":N,"pages":N,"totalClicks":N}`.
 - Memory and SQLite `SumClicks`; page service `MyStats` aggregates the caller's links.
 
