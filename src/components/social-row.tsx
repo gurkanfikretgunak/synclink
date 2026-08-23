@@ -1,18 +1,12 @@
-import { Github, Globe, Instagram, Linkedin, Mail, Youtube } from "lucide-react";
+import { Globe, Link as LinkIcon, Mail } from "lucide-react";
 import type { Social } from "@/lib/api";
 
-const icons: Record<string, typeof Github> = {
-  github: Github,
-  instagram: Instagram,
-  linkedin: Linkedin,
-  youtube: Youtube,
-  email: Mail,
-  mail: Mail,
-  x: Globe,
-  twitter: Globe,
-  tiktok: Globe,
-  website: Globe,
-};
+function iconFor(network: string) {
+  const key = network.toLowerCase();
+  if (key === "email" || key === "mail") return Mail;
+  if (key === "website" || key === "url") return LinkIcon;
+  return Globe;
+}
 
 export function SocialRow({ socials, dark = false }: { socials?: Social[] | null; dark?: boolean }) {
   const items = (socials || []).filter((item) => item.network && item.url);
@@ -20,7 +14,7 @@ export function SocialRow({ socials, dark = false }: { socials?: Social[] | null
   return (
     <ul className="mt-4 flex flex-wrap items-center justify-center gap-2">
       {items.map((item) => {
-        const Icon = icons[item.network.toLowerCase()] || Globe;
+        const Icon = iconFor(item.network);
         return (
           <li key={`${item.network}-${item.url}`}>
             <a
