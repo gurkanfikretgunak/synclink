@@ -47,6 +47,11 @@ export function PublicLinkButton({
         {clicks}
         {last ? ` · ${last}` : ""}
       </span>
+      {link.embedUrl ? (
+        <span className="mt-3 block overflow-hidden rounded-xl">
+          <iframe title={link.title} src={link.embedUrl} className="aspect-video h-auto w-full" />
+        </span>
+      ) : null}
     </a>
   );
 }
