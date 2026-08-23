@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PublicLinkButton } from "@/components/public-link";
 import { SiteNav } from "@/components/site-nav";
+import { SocialRow } from "@/components/social-row";
 import { synclink } from "@/lib/api";
 
 const bgClass: Record<string, string> = {
@@ -54,6 +55,7 @@ export default async function PublicPage({ params }: PageProps<"/[slug]">) {
         </Avatar>
         <h1 className="mt-5 text-2xl font-medium tracking-tight">{page.displayName}</h1>
         {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
+        <SocialRow socials={page.socials} dark={dark} />
         <ul className="mt-10 w-full space-y-3">
           {page.links.map((link) => (
             <li key={link.id}>

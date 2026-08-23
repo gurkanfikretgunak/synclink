@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.8.2] - 2026-08-23
+
+### Added
+- Studio + public `/{slug}` social-icon row from `socials: [{ network, url }]`. Saves with the page. Hidden until the API stores the field.
+
 ## [0.8.1] - 2026-08-23
 
 ### Added

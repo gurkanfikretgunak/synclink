@@ -19,6 +19,11 @@ export function setToken(token: string | null): void {
   else window.localStorage.removeItem(TOKEN_KEY);
 }
 
+export type Social = {
+  network: string;
+  url: string;
+};
+
 export type Page = {
   id: string;
   slug: string;
@@ -30,6 +35,7 @@ export type Page = {
   accentColor: string;
   background: string;
   motion: string;
+  socials?: Social[];
   createdAt: string;
   updatedAt: string;
 };
@@ -67,6 +73,7 @@ export type PublicPage = {
   accentColor: string;
   background: string;
   motion: string;
+  socials?: Social[];
   links: PublicLink[];
 };
 
@@ -80,6 +87,7 @@ export type UpsertPageInput = {
   accentColor?: string;
   background?: string;
   motion?: string;
+  socials?: Social[];
 };
 
 export type CreateLinkInput = {

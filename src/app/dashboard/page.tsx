@@ -11,10 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { SiteNav } from "@/components/site-nav";
+import { SocialRow } from "@/components/social-row";
 import { getToken, setToken, synclink, type LinkItem, type Page } from "@/lib/api";
 
 type Gate = "login" | "register" | "forgot" | "reset";
-type Panel = "identity" | "look" | "links" | "account";
+type Panel = "identity" | "look" | "socials" | "links" | "account";
 
 const emptyPage: Page = {
   id: "",
@@ -27,6 +28,7 @@ const emptyPage: Page = {
   accentColor: "#111111",
   background: "cream",
   motion: "subtle",
+  socials: [],
   createdAt: "",
   updatedAt: "",
 };
@@ -177,6 +179,7 @@ export default function DashboardPage() {
         accentColor: page.accentColor,
         background: page.background,
         motion: page.motion,
+        socials: (page.socials || []).filter((item) => item.network && item.url),
       });
       setPage(next);
       setNotice(`Live at /${next.slug}`);
@@ -354,6 +357,36 @@ export default function DashboardPage() {
           </Card>
         ) : null}
 
+        {panel === "socials" ? (
+          <Card className="border-neutral-200/80 bg-white shadow-none">
+            <CardHeader>
+              <CardTitle className="font-medium">Socials</CardTitle>
+              <CardDescription>Icon row under the avatar. network + url. Lands when the API accepts socials.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(page.socials || []).map((item, index) => (
+                <div key={index} className="grid gap-2 md:grid-cols-[140px_1fr_auto]">
+                  <Input placeholder="github" value={item.network} onChange={(e) => {
+                    const socials = [...(page.socials || [])];
+                    socials[index] = { ...socials[index], network: e.target.value };
+                    setPage({ ...page, socials });
+                  }} />
+                  <Input placeholder="https://" value={item.url} onChange={(e) => {
+                    const socials = [...(page.socials || [])];
+                    socials[index] = { ...socials[index], url: e.target.value };
+                    setPage({ ...page, socials });
+                  }} />
+                  <Button type="button" variant="ghost" onClick={() => setPage({ ...page, socials: (page.socials || []).filter((_, i) => i !== index) })}>Remove</Button>
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setPage({ ...page, socials: [...(page.socials || []), { network: "", url: "" }] })}>Add social</Button>
+                <Button type="button" onClick={() => void savePage()}>Save socials</Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
         {panel === "look" ? (
           <Card className="border-neutral-200/80 bg-white shadow-none">
             <CardHeader>
@@ -456,6 +489,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <p className="mt-3 text-xs leading-5 opacity-70">{page.bio || "Bio appears here."}</p>
+            <SocialRow socials={page.socials} dark={dark} />
             <ul className="mt-4 space-y-2">
               {activeLinks.map((item) => (
                 <li key={item.id} className={`rounded-xl border px-3 py-2 text-center text-xs ${dark ? "border-white/15" : "border-neutral-200 bg-white/80"}`} style={{ boxShadow: `0 0 0 1px ${page.accentColor || "#111111"}14` }}>{item.title}{typeof item.clicks === "number" ? ` · ${item.clicks}` : ""}</li>
@@ -474,6 +508,12 @@ export default function DashboardPage() {
           <CardHeader>
             <CardTitle className="text-base font-medium">Links</CardTitle>
             <CardDescription>{links.length} on this page</CardDescription>
+          </CardHeader>
+        </Card>
+        <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "socials" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("socials")}>
+          <CardHeader>
+            <CardTitle className="text-base font-medium">Socials</CardTitle>
+            <CardDescription>{(page.socials || []).filter((item) => item.network && item.url).length} icons</CardDescription>
           </CardHeader>
         </Card>
         <Card className={`cursor-pointer border-neutral-200/80 bg-white shadow-none transition hover:-translate-y-0.5 ${panel === "account" ? "ring-2 ring-neutral-900" : ""}`} onClick={() => setPanel("account")}>
