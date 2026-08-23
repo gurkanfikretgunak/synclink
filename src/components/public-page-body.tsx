@@ -4,6 +4,7 @@ import { PublicLinkButton } from "@/components/public-link";
 import { ShareQr } from "@/components/share-qr";
 import { SiteNav } from "@/components/site-nav";
 import { SocialRow } from "@/components/social-row";
+import { PageCover } from "@/components/page-cover";
 import { SubscribeForm } from "@/components/subscribe-form";
 import type { PublicPage } from "@/lib/api";
 
@@ -33,14 +34,25 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
   const accent = page.accentColor || "#111111";
   const dark = page.background === "dark";
   const links = [...page.links].sort((a, b) => Number(Boolean(b.featured)) - Number(Boolean(a.featured)));
+  const sections: { name: string; items: typeof links }[] = [];
+  for (const link of links) {
+    const name = (link.section || "").trim();
+    const last = sections[sections.length - 1];
+    if (!last || last.name !== name) sections.push({ name, items: [link] });
+    else last.items.push(link);
+  }
 
   return (
     <main className={`relative min-h-full overflow-hidden ${tone}`}>
       <SiteNav variant="slim" tone={dark ? "dark" : "light"} />
       <div className="relative mx-auto flex min-h-full w-full max-w-md flex-col items-center px-6 py-16">
-        <div className="img-hover mb-8 overflow-hidden rounded-3xl">
-          <Image src="/stations/orbit.png" alt="" width={720} height={480} className="h-28 w-full object-cover opacity-90" />
-        </div>
+        {page.coverUrl ? (
+          <PageCover url={page.coverUrl} kind={page.coverKind} dark={dark} />
+        ) : (
+          <div className="img-hover mb-8 overflow-hidden rounded-3xl">
+            <Image src="/stations/orbit.png" alt="" width={720} height={480} className="h-28 w-full object-cover opacity-90" />
+          </div>
+        )}
         <Avatar className={`size-20 border ${shape} ${dark ? "border-white/15" : "border-neutral-200"}`}>
           {page.avatarUrl ? <AvatarImage src={page.avatarUrl} alt={page.displayName} /> : null}
           <AvatarFallback className={dark ? "bg-white/10 text-white" : ""}>
@@ -54,18 +66,25 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
         {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
         {page.publishedAt ? <p className={`mt-1 text-[10px] tracking-[0.16em] ${dark ? "text-white/40" : "text-neutral-400"}`}>SINCE {new Date(page.publishedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })}</p> : null}
         <SocialRow socials={page.socials} dark={dark} />
-        <ul className="mt-10 w-full space-y-3">
-          {links.map((link) => (
-            <li key={link.id}>
-              <PublicLinkButton
-                slug={page.slug}
-                link={link}
-                className={`block rounded-2xl border px-4 py-4 text-center text-sm ${motion} ${dark ? "border-white/15 bg-white/5" : "border-neutral-200 bg-white"}`}
-                style={{ boxShadow: `0 0 0 1px ${accent}14` }}
-              />
-            </li>
+        <div className="mt-10 w-full space-y-6">
+          {sections.map((group) => (
+            <div key={group.name || "links"}>
+              {group.name ? <p className={`mb-3 text-[10px] tracking-[0.16em] ${dark ? "text-white/40" : "text-neutral-400"}`}>{group.name.toUpperCase()}</p> : null}
+              <ul className="space-y-3">
+                {group.items.map((link) => (
+                  <li key={link.id}>
+                    <PublicLinkButton
+                      slug={page.slug}
+                      link={link}
+                      className={`block rounded-2xl border px-4 py-4 text-center text-sm ${motion} ${dark ? "border-white/15 bg-white/5" : "border-neutral-200 bg-white"}`}
+                      style={{ boxShadow: `0 0 0 1px ${accent}14` }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
         <SubscribeForm slug={page.slug} dark={dark} />
         <ShareQr slug={page.slug} dark={dark} />
       </div>
