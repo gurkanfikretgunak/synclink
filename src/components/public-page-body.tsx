@@ -52,6 +52,7 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
           {page.verified ? <span className={`ml-2 align-middle text-[10px] tracking-[0.16em] ${dark ? "text-white/50" : "text-neutral-400"}`}>VERIFIED</span> : null}
         </h1>
         {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
+        {page.publishedAt ? <p className={`mt-1 text-[10px] tracking-[0.16em] ${dark ? "text-white/40" : "text-neutral-400"}`}>SINCE {new Date(page.publishedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })}</p> : null}
         <SocialRow socials={page.socials} dark={dark} />
         <ul className="mt-10 w-full space-y-3">
           {links.map((link) => (
