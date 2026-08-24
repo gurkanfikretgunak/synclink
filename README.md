@@ -35,7 +35,7 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
-0.10.11: client maps generic 422 "validation" / Unprocessable Entity to a field hint; 401 empty/generic becomes "invalid credentials". Specific API messages stay as-is. 404-safe. No new API.
+0.10.11: client maps 401/422 so login and save no longer show a bare "validation". No new API.
 
 0.10.10: homepage type-first hero + device frame; feature strip instead of station cards. No new API.
 
