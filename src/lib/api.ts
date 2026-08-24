@@ -205,6 +205,7 @@ export type AdminStats = {
   users: number;
   pages: number;
   totalClicks?: number;
+  pageClicks?: { id: string; slug: string; clicks: number }[];
 };
 
 export type LoginResponse = {
@@ -443,7 +444,10 @@ export const synclink = {
     );
   },
   adminStats(token: string) {
-    return request<AdminStats>("/api/v1/admin/stats", { token });
+    return request<AdminStats>("/api/v1/admin/stats", { token }).then((data) => ({
+      ...data,
+      pageClicks: data.pageClicks ?? [],
+    }));
   },
   adminUsers(token: string) {
     return request<AdminUser[]>("/api/v1/admin/users", { token });
