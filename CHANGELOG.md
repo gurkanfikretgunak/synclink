@@ -3,12 +3,12 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
-## [0.10.13] - 2026-08-24
+## [0.10.14] - 2026-08-24
 
 ### Added
 - 422 `fields` on page/link validation: `{ "error":"Unprocessable Entity", "message":"validation", "code":422, "fields": { "slug":"invalid slug" } }`. Keys: slug, theme, title, email. Subscribe empty JSON stays 400 `invalid email`.
 
-## [0.10.7] - 2026-08-24
+## [0.10.13] - 2026-08-24
 
 ### Added
 - Public click rate limit: 60/min per IP + link id on the public click POST. Sends X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset. Over the limit: 429 rate_limited plus Retry-After. CORS exposes those headers.

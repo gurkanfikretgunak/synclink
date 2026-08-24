@@ -48,3 +48,6 @@ SQLite: subscribers table; ALTER pages.verified, pages.page_password, links.feat
 0.9.1: publishedAt on GET/PUT /me/page and public GET /public/pages/{slug} (RFC3339). Set once on first create. SQLite pages.published_at; migrate backfills from created_at.
 
 0.10.0: coverUrl + coverKind on GET/PUT /me/page and public page. Links accept section (group heading, max 40) and embedUrl (YouTube/Spotify/etc). Invalid http(s) URLs are dropped.
+
+0.10.13: public click 60/min per IP+link; X-RateLimit-Limit/Remaining/Reset; 429 rate_limited + Retry-After.
+0.10.14: 422 fields map on page/link validation (slug, theme, title, email). Message stays validation.
