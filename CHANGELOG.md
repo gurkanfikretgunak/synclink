@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.10.5] - 2026-08-24
+
+### App
+- Public + studio Share card: client-side Add to contacts (.vcf from displayName, bio, page URL, socials; PHOTO if avatar is http(s)). No new API.
+
 ## [0.10.4] - 2026-08-24
 
 ### App
