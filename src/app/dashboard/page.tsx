@@ -83,6 +83,7 @@ export default function DashboardPage() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
   const [daily, setDaily] = useState<{ date: string; clicks: number }[]>([]);
+  const [referrers, setReferrers] = useState<{ host: string; clicks: number }[]>([]);
   const [linkTitle, setLinkTitle] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
 
@@ -95,12 +96,17 @@ export default function DashboardPage() {
     const [mine, items, stats, inbox] = await Promise.all([
       synclink.getMyPage(next),
       synclink.listLinks(next),
-      synclink.meStats(next).catch(() => ({ totalClicks: 0, links: [] as { id: string; clicks: number }[], daily: [] as { date: string; clicks: number }[] })),
+      synclink.meStats(next).catch(() => ({ totalClicks: 0, links: [] as { id: string; clicks: number }[], daily: [] as { date: string; clicks: number }[], referrers: [] as { host: string; clicks: number }[] })),
       synclink.listSubscribers(next).catch(() => [] as Subscriber[]),
     ]);
     const clicksById = Object.fromEntries((stats.links || []).map((row) => [row.id, row.clicks]));
     setTotalClicks(stats.totalClicks || items.reduce((sum, item) => sum + (item.clicks || clicksById[item.id] || 0), 0));
     setDaily(Array.isArray(stats.daily) ? stats.daily : []);
+    setReferrers(
+      Array.isArray(stats.referrers)
+        ? stats.referrers.filter((row) => row && typeof row.host === "string" && row.host.trim())
+        : [],
+    );
     setSubscribers(inbox);
     if (isLivePage(mine)) {
       setPage({
@@ -374,6 +380,16 @@ export default function DashboardPage() {
                   );
                 })}
               </div>
+            ) : null}
+            {referrers.length ? (
+              <ul className="mt-3 max-w-xs space-y-1" aria-label="Where from">
+                {referrers.map((row) => (
+                  <li key={row.host} className="flex justify-between gap-4 text-xs text-neutral-500">
+                    <span className="truncate">{row.host}</span>
+                    <span>{row.clicks}</span>
+                  </li>
+                ))}
+              </ul>
             ) : null}
           </div>
           <div className="flex gap-2">
