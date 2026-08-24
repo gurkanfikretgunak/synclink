@@ -16,6 +16,7 @@ type MemoryStore struct {
 	links       map[uuid.UUID]*Link
 	subscribers map[uuid.UUID]*Subscriber
 	days        map[uuid.UUID]map[string]int
+	referrers   map[uuid.UUID]map[string]int
 }
 
 func NewMemoryStore() *MemoryStore {
@@ -26,6 +27,7 @@ func NewMemoryStore() *MemoryStore {
 		links:       map[uuid.UUID]*Link{},
 		subscribers: map[uuid.UUID]*Subscriber{},
 		days:        map[uuid.UUID]map[string]int{},
+		referrers:   map[uuid.UUID]map[string]int{},
 	}
 }
 
@@ -202,6 +204,27 @@ func (m *MemoryStore) DailyClicks(ctx context.Context, pageID uuid.UUID) (map[st
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	src := m.days[pageID]
+	out := map[string]int{}
+	for k, v := range src {
+		out[k] = v
+	}
+	return out, nil
+}
+
+func (m *MemoryStore) BumpReferrer(ctx context.Context, pageID uuid.UUID, host string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.referrers[pageID] == nil {
+		m.referrers[pageID] = map[string]int{}
+	}
+	m.referrers[pageID][host]++
+	return nil
+}
+
+func (m *MemoryStore) Referrers(ctx context.Context, pageID uuid.UUID) (map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	src := m.referrers[pageID]
 	out := map[string]int{}
 	for k, v := range src {
 		out[k] = v

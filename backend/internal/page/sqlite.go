@@ -406,6 +406,36 @@ func (s *SQLiteStore) DailyClicks(ctx context.Context, pageID uuid.UUID) (map[st
 	return out, rows.Err()
 }
 
+func (s *SQLiteStore) BumpReferrer(ctx context.Context, pageID uuid.UUID, host string) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO click_referrers (page_id, host, clicks) VALUES (?, ?, 1)
+		ON CONFLICT(page_id, host) DO UPDATE SET clicks = clicks + 1`,
+		pageID.String(), host,
+	)
+	return err
+}
+
+func (s *SQLiteStore) Referrers(ctx context.Context, pageID uuid.UUID) (map[string]int, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT host, clicks FROM click_referrers WHERE page_id=?`,
+		pageID.String(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var host string
+		var n int
+		if err := rows.Scan(&host, &n); err != nil {
+			return nil, err
+		}
+		out[host] = n
+	}
+	return out, rows.Err()
+}
+
 func (s *SQLiteStore) SumClicks(ctx context.Context) (int, error) {
 	var n sql.NullInt64
 	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(SUM(clicks), 0) FROM links`).Scan(&n)

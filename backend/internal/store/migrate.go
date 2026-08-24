@@ -94,6 +94,14 @@ CREATE TABLE IF NOT EXISTS click_days (
 	PRIMARY KEY (page_id, day),
 	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS click_referrers (
+	page_id TEXT NOT NULL,
+	host TEXT NOT NULL,
+	clicks INTEGER NOT NULL DEFAULT 0,
+	PRIMARY KEY (page_id, host),
+	FOREIGN KEY (page_id) REFERENCES pages(id) ON DELETE CASCADE
+);
 `
 
 func Migrate(db *sql.DB) error {

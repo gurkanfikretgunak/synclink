@@ -28,7 +28,7 @@ func TestSQLitePersistAndClick(t *testing.T) {
 	if link.LastClickedAt != nil {
 		t.Fatalf("never-clicked lastClickedAt should be null, got %#v", link.LastClickedAt)
 	}
-	n, err := svc.RecordClick(ctx, "gurkan", link.ID)
+	n, err := svc.RecordClick(ctx, "gurkan", link.ID, "")
 	if err != nil || n != 1 {
 		t.Fatalf("click n=%d err=%v", n, err)
 	}
@@ -39,7 +39,7 @@ func TestSQLitePersistAndClick(t *testing.T) {
 	if got.Links[0].LastClickedAt == nil {
 		t.Fatal("after click lastClickedAt should be set")
 	}
-	if _, err := svc.RecordClick(ctx, "nope", link.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "nope", link.ID, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing page %v", err)
 	}
 }
@@ -74,7 +74,7 @@ func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.RecordClick(ctx, "gurkan", link.ID); err != nil {
+	if _, err := svc.RecordClick(ctx, "gurkan", link.ID, "https://www.instagram.com/p/x"); err != nil {
 		t.Fatal(err)
 	}
 	stats, err := svc.MyStats(ctx, u)
@@ -83,6 +83,9 @@ func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
 	}
 	if len(stats.Daily) != 14 || stats.Daily[13].Clicks != 1 {
 		t.Fatalf("sqlite daily %#v", stats.Daily)
+	}
+	if len(stats.Referrers) != 1 || stats.Referrers[0].Host != "instagram.com" || stats.Referrers[0].Clicks != 1 {
+		t.Fatalf("sqlite referrers %#v", stats.Referrers)
 	}
 	total, err := svc.SumClicks(ctx)
 	if err != nil || total != 1 {

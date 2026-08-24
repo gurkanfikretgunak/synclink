@@ -27,6 +27,8 @@ type LinkStore interface {
 	SumClicks(ctx context.Context) (int, error)
 	ClicksByPage(ctx context.Context) (map[uuid.UUID]int, error)
 	DailyClicks(ctx context.Context, pageID uuid.UUID) (map[string]int, error)
+	BumpReferrer(ctx context.Context, pageID uuid.UUID, host string) error
+	Referrers(ctx context.Context, pageID uuid.UUID) (map[string]int, error)
 }
 
 type SubscriberStore interface {

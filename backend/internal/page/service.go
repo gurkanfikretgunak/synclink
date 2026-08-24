@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/mail"
+	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -374,7 +376,7 @@ func (s *Service) ListAll(ctx context.Context) ([]PageDTO, error) {
 	return out, nil
 }
 
-func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID) (int, error) {
+func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID, referer string) (int, error) {
 	normalized, err := normalizeSlug(slug)
 	if err != nil {
 		return 0, ErrNotFound
@@ -390,7 +392,56 @@ func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID
 	if !l.Active || !LinkInSchedule(l, time.Now().UTC()) {
 		return 0, ErrNotFound
 	}
-	return s.store.IncrementClicks(ctx, p.ID, linkID)
+	n, err := s.store.IncrementClicks(ctx, p.ID, linkID)
+	if err != nil {
+		return 0, err
+	}
+	if host := referrerHost(referer); host != "" {
+		if err := s.store.BumpReferrer(ctx, p.ID, host); err != nil {
+			return 0, err
+		}
+	}
+	return n, nil
+}
+
+func referrerHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	if u.Host == "" {
+		u, err = url.Parse("https://" + raw)
+		if err != nil {
+			return ""
+		}
+	}
+	host := strings.ToLower(strings.TrimSuffix(u.Hostname(), "."))
+	host = strings.TrimPrefix(host, "www.")
+	if host == "" || strings.ContainsAny(host, " /") || len(host) > 253 {
+		return ""
+	}
+	return host
+}
+
+func rankReferrers(counts map[string]int) []ReferrerStat {
+	out := make([]ReferrerStat, 0, len(counts))
+	for host, n := range counts {
+		out = append(out, ReferrerStat{Host: host, Clicks: n})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Clicks != out[j].Clicks {
+			return out[i].Clicks > out[j].Clicks
+		}
+		return out[i].Host < out[j].Host
+	})
+	if len(out) > 20 {
+		out = out[:20]
+	}
+	return out
 }
 
 func padDaily(counts map[string]int) []DailyClick {
@@ -411,7 +462,7 @@ func (s *Service) MyStats(ctx context.Context, userID uuid.UUID) (*MyStats, erro
 	if err != nil {
 		return nil, err
 	}
-	out := &MyStats{TotalClicks: 0, Links: make([]MyStatsLink, 0, len(links)), Daily: padDaily(nil)}
+	out := &MyStats{TotalClicks: 0, Links: make([]MyStatsLink, 0, len(links)), Daily: padDaily(nil), Referrers: []ReferrerStat{}}
 	for _, l := range links {
 		out.TotalClicks += l.Clicks
 		out.Links = append(out.Links, MyStatsLink{ID: l.ID, Title: l.Title, Clicks: l.Clicks, URL: l.URL})
@@ -428,6 +479,11 @@ func (s *Service) MyStats(ctx context.Context, userID uuid.UUID) (*MyStats, erro
 		return nil, err
 	}
 	out.Daily = padDaily(counts)
+	refs, err := s.store.Referrers(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	out.Referrers = rankReferrers(refs)
 	return out, nil
 }
 

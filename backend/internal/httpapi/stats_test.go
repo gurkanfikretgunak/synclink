@@ -42,6 +42,9 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	if empty.TotalClicks != 0 || empty.Links == nil || len(empty.Links) != 0 {
 		t.Fatalf("empty json %#v body=%s", empty, emptyW.Body.String())
 	}
+	if empty.Referrers == nil || len(empty.Referrers) != 0 {
+		t.Fatalf("empty referrers %#v body=%s", empty.Referrers, emptyW.Body.String())
+	}
 	if len(empty.Daily) != 14 {
 		t.Fatalf("empty daily len=%d body=%s", len(empty.Daily), emptyW.Body.String())
 	}
@@ -80,6 +83,7 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	}
 
 	click := httptest.NewRequest(http.MethodPost, "/api/v1/public/pages/demo/links/"+link.ID.String()+"/click", nil)
+	click.Header.Set("Referer", "https://www.t.co/abc")
 	clickW := httptest.NewRecorder()
 	h.ServeHTTP(clickW, click)
 	if clickW.Code != 200 {
@@ -105,6 +109,9 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	}
 	if me.Daily[13].Clicks != 1 || me.Daily[13].Date == "" {
 		t.Fatalf("today daily %#v body=%s", me.Daily[13], meW.Body.String())
+	}
+	if len(me.Referrers) != 1 || me.Referrers[0].Host != "t.co" || me.Referrers[0].Clicks != 1 {
+		t.Fatalf("referrers %#v body=%s", me.Referrers, meW.Body.String())
 	}
 	sum := 0
 	for _, d := range me.Daily {

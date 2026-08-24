@@ -87,7 +87,7 @@ func TestSQLiteSurvivesReopen(t *testing.T) {
 	if auth2.Settings().SiteName != "Persisted" {
 		t.Fatalf("settings after reopen %#v", auth2.Settings())
 	}
-	n, err := pages2.RecordClick(ctx, "gurkan", pub.Links[0].ID)
+	n, err := pages2.RecordClick(ctx, "gurkan", pub.Links[0].ID, "")
 	if err != nil || n != 1 {
 		t.Fatalf("click n=%d err=%v", n, err)
 	}

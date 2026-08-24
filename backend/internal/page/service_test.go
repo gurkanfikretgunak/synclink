@@ -139,21 +139,21 @@ func TestRecordClick(t *testing.T) {
 	if hidden.LastClickedAt != nil {
 		t.Fatalf("inactive never-clicked lastClickedAt should be null, got %#v", hidden.LastClickedAt)
 	}
-	n, err := svc.RecordClick(ctx, "gurkan", on.ID)
+	n, err := svc.RecordClick(ctx, "gurkan", on.ID, "")
 	if err != nil || n != 1 {
 		t.Fatalf("first click n=%d err=%v", n, err)
 	}
-	n, err = svc.RecordClick(ctx, "gurkan", on.ID)
+	n, err = svc.RecordClick(ctx, "gurkan", on.ID, "")
 	if err != nil || n != 2 {
 		t.Fatalf("second click n=%d err=%v", n, err)
 	}
-	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("inactive should 404, got %v", err)
 	}
-	if _, err := svc.RecordClick(ctx, "missing", on.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "missing", on.ID, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing page should 404, got %v", err)
 	}
-	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New()); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New(), ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing link should 404, got %v", err)
 	}
 	pub, err := svc.GetPublicPage(ctx, "gurkan")
@@ -209,11 +209,11 @@ func TestRecordClickIncrementsAnd404(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := svc.RecordClick(ctx, "gurkan", on.ID)
+	n, err := svc.RecordClick(ctx, "gurkan", on.ID, "")
 	if err != nil || n != 1 {
 		t.Fatalf("first click n=%d err=%v", n, err)
 	}
-	n, err = svc.RecordClick(ctx, "gurkan", on.ID)
+	n, err = svc.RecordClick(ctx, "gurkan", on.ID, "")
 	if err != nil || n != 2 {
 		t.Fatalf("second click n=%d err=%v", n, err)
 	}
@@ -234,13 +234,13 @@ func TestRecordClickIncrementsAnd404(t *testing.T) {
 	if got != 2 {
 		t.Fatalf("studio clicks %d", got)
 	}
-	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "gurkan", hidden.ID, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("inactive: %v", err)
 	}
-	if _, err := svc.RecordClick(ctx, "missing", on.ID); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "missing", on.ID, ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing page: %v", err)
 	}
-	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New()); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.RecordClick(ctx, "gurkan", uuid.New(), ""); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing link: %v", err)
 	}
 }
@@ -270,11 +270,11 @@ func TestMyStatsEmptyAndAfterRecordClick(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	n, err := svc.RecordClick(ctx, "gurkan", link.ID)
+	n, err := svc.RecordClick(ctx, "gurkan", link.ID, "")
 	if err != nil || n != 1 {
 		t.Fatalf("click n=%d err=%v", n, err)
 	}
-	n, err = svc.RecordClick(ctx, "gurkan", link.ID)
+	n, err = svc.RecordClick(ctx, "gurkan", link.ID, "")
 	if err != nil || n != 2 {
 		t.Fatalf("click2 n=%d err=%v", n, err)
 	}
@@ -545,5 +545,19 @@ func TestCoverSectionEmbed(t *testing.T) {
 	upd, err := svc.UpdateLink(ctx, u, link.ID, UpdateLinkInput{Section: &cleared, EmbedURL: &bad})
 	if err != nil || upd.Section != "" || upd.EmbedURL != nil {
 		t.Fatalf("clear/invalid %#v err=%v", upd, err)
+	}
+}
+
+func TestReferrerHost(t *testing.T) {
+	cases := map[string]string{
+		"": "",
+		"https://www.t.co/x": "t.co",
+		"http://Instagram.com/p/1": "instagram.com",
+		"not a url": "",
+	}
+	for in, want := range cases {
+		if got := referrerHost(in); got != want {
+			t.Fatalf("referrerHost(%q)=%q want %q", in, got, want)
+		}
 	}
 }

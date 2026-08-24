@@ -167,10 +167,16 @@ type DailyClick struct {
 	Clicks int    `json:"clicks"`
 }
 
+type ReferrerStat struct {
+	Host   string `json:"host"`
+	Clicks int    `json:"clicks"`
+}
+
 type MyStats struct {
-	TotalClicks int           `json:"totalClicks"`
-	Links       []MyStatsLink `json:"links"`
-	Daily       []DailyClick  `json:"daily"`
+	TotalClicks int            `json:"totalClicks"`
+	Links       []MyStatsLink  `json:"links"`
+	Daily       []DailyClick   `json:"daily"`
+	Referrers   []ReferrerStat `json:"referrers"`
 }
 
 type PageClickStat struct {

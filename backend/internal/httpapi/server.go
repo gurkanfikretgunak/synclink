@@ -354,7 +354,7 @@ func (s *Server) publicClick(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 404, map[string]any{"error": "Not Found", "message": "not found", "code": 404})
 		return
 	}
-	n, err := s.pages.RecordClick(r.Context(), chi.URLParam(r, "slug"), lid)
+	n, err := s.pages.RecordClick(r.Context(), chi.URLParam(r, "slug"), lid, r.Header.Get("Referer"))
 	if err != nil {
 		writeErr(w, err)
 		return
