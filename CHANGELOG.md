@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.12] - 2026-08-24
+
+### App
+- Studio/public 422 copy is path-aware: page save, link save, subscribe, auth, admin settings. If the API later sends `fields`, those win. Locked 401 unchanged. No new API.
+
 ## [0.10.11] - 2026-08-24
 
 ### App
