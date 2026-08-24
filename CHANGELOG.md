@@ -3,6 +3,12 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+
+## [0.10.6] - 2026-08-24
+
+### App
+- Public `/{slug}` generateMetadata: `themeColor` from `accentColor`, tab/Apple icon from avatar (or cover) http(s) URL, canonical `/{slug}`. Locked pages stay noindex. No new API.
+
 ## [0.10.5] - 2026-08-24
 
 ### App
