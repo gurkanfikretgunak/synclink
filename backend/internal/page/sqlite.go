@@ -380,6 +380,32 @@ func (s *SQLiteStore) SumClicks(ctx context.Context) (int, error) {
 	return int(n.Int64), nil
 }
 
+func (s *SQLiteStore) ClicksByPage(ctx context.Context) (map[uuid.UUID]int, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT p.id, COALESCE(SUM(l.clicks), 0)
+		FROM pages p
+		LEFT JOIN links l ON l.page_id = p.id
+		GROUP BY p.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[uuid.UUID]int{}
+	for rows.Next() {
+		var idStr string
+		var n int
+		if err := rows.Scan(&idStr, &n); err != nil {
+			return nil, err
+		}
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			return nil, err
+		}
+		out[id] = n
+	}
+	return out, rows.Err()
+}
+
 func (s *SQLiteStore) CreateSubscriber(ctx context.Context, sub *Subscriber) error {
 	sub.CreatedAt = time.Now().UTC()
 	_, err := s.db.ExecContext(ctx, `

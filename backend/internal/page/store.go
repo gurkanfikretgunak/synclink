@@ -25,6 +25,7 @@ type LinkStore interface {
 	Reorder(ctx context.Context, pageID uuid.UUID, ids []uuid.UUID) error
 	IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error)
 	SumClicks(ctx context.Context) (int, error)
+	ClicksByPage(ctx context.Context) (map[uuid.UUID]int, error)
 }
 
 type SubscriberStore interface {

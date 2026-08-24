@@ -410,6 +410,22 @@ func (s *Service) SumClicks(ctx context.Context) (int, error) {
 	return s.store.SumClicks(ctx)
 }
 
+func (s *Service) PageClicks(ctx context.Context) ([]PageClickStat, error) {
+	pages, err := s.store.ListPages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sums, err := s.store.ClicksByPage(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]PageClickStat, 0, len(pages))
+	for _, p := range pages {
+		out = append(out, PageClickStat{ID: p.ID, Slug: p.Slug, Clicks: sums[p.ID]})
+	}
+	return out, nil
+}
+
 func normalizeSubscribeEmail(raw string) (string, error) {
 	email := strings.ToLower(strings.TrimSpace(raw))
 	if email == "" || strings.ContainsAny(email, " \t\n\r") {

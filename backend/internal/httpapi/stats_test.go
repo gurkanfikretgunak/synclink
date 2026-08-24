@@ -107,4 +107,15 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	if admin["users"] != float64(1) || admin["pages"] != float64(1) || admin["totalClicks"] != float64(1) {
 		t.Fatalf("admin json %#v body=%s", admin, adminW.Body.String())
 	}
+	raw, ok := admin["pageClicks"].([]any)
+	if !ok || len(raw) != 1 {
+		t.Fatalf("pageClicks %#v body=%s", admin["pageClicks"], adminW.Body.String())
+	}
+	row, ok := raw[0].(map[string]any)
+	if !ok {
+		t.Fatalf("pageClicks[0] %#v", raw[0])
+	}
+	if row["clicks"] != float64(1) || row["slug"] == "" || row["id"] == "" {
+		t.Fatalf("pageClicks row %#v body=%s", row, adminW.Body.String())
+	}
 }

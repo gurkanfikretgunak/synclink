@@ -12,7 +12,7 @@ go run ./cmd/server
 Health: GET http://localhost:8080/health/live
 SQLite store (modernc.org/sqlite, no CGO). JWT from /api/v1/auth/register or /login.
 
-Routes: /health/live, /api/v1/auth/register, /api/v1/auth/login, /api/v1/public/pages/{slug}, POST /api/v1/public/pages/{slug}/links/{id}/click (no JWT; 200 {ok:true, clicks:N} or 404), /api/v1/me, GET /api/v1/me/stats (JWT; 200 {totalClicks, links:[{id,title,clicks,url}]} or empty {totalClicks:0,links:[]}), /api/v1/me/page, /api/v1/me/page/links, /api/v1/me/page/links/{id}, /api/v1/me/page/links/reorder, GET /api/v1/admin/stats (JWT admin; {users,pages,totalClicks})
+Routes: /health/live, /api/v1/auth/register, /api/v1/auth/login, /api/v1/public/pages/{slug}, POST /api/v1/public/pages/{slug}/links/{id}/click (no JWT; 200 {ok:true, clicks:N} or 404), /api/v1/me, GET /api/v1/me/stats (JWT; 200 {totalClicks, links:[{id,title,clicks,url}]} or empty {totalClicks:0,links:[]}), /api/v1/me/page, /api/v1/me/page/links, /api/v1/me/page/links/{id}, /api/v1/me/page/links/reorder, GET /api/v1/admin/stats (JWT admin; {users,pages,totalClicks,pageClicks:[{id,slug,clicks}]})
 
 Docker: docker build -t synclink-api . && docker run -p 8080:8080 -e JWT_SECRET=dev-secret -e SYNCLINK_DB=/var/data/synclink.db synclink-api
 Render: ../render.yaml (rootDir backend, Frankfurt). SYNCLINK_DB=/var/data/synclink.db. Process restart keeps data; a new instance without a disk still starts empty and seeds.
@@ -30,7 +30,7 @@ Public click: POST /api/v1/public/pages/{slug}/links/{id}/click increments click
 Links also expose lastClickedAt (RFC3339 or null if never clicked); IncrementClicks sets it in memory and SQLite.
 
 Studio stats: GET /api/v1/me/stats (JWT) returns totalClicks plus each link id/title/clicks/url. Missing page is 200 {totalClicks:0,links:[]}.
-Admin stats: GET /api/v1/admin/stats includes users, pages, and totalClicks (SumClicks on memory and SQLite).
+Admin stats: GET /api/v1/admin/stats includes users, pages, totalClicks, and pageClicks [{id, slug, clicks}] (zero-click pages stay in the list).
 
 Socials on GET/PUT /api/v1/me/page and public GET /api/v1/public/pages/{slug}: `socials: [{ "network": "github", "url": "https://github.com/..." }]`. Empty/null stores and returns `[]`.
 Allowed networks (lowercase): instagram, x (twitter normalizes to x), youtube, tiktok, github, linkedin, threads, spotify, website, email, whatsapp.
@@ -51,3 +51,4 @@ SQLite: subscribers table; ALTER pages.verified, pages.page_password, links.feat
 
 0.10.13: public click 60/min per IP+link; X-RateLimit-Limit/Remaining/Reset; 429 rate_limited + Retry-After.
 0.10.14: 422 fields map on page/link validation (slug, theme, title, email). Message stays validation.
+0.10.15: GET /api/v1/admin/stats pageClicks [{id, slug, clicks}]; totalClicks unchanged.

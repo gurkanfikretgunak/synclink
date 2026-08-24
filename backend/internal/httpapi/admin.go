@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/gurkanfikretgunak/synclink/backend/internal/auth"
+	"github.com/gurkanfikretgunak/synclink/backend/internal/page"
 )
 
 func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
@@ -129,7 +130,15 @@ func (s *Server) adminStats(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"users": len(users), "pages": len(pages), "totalClicks": clicks})
+	pageClicks, err := s.pages.PageClicks(r.Context())
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	if pageClicks == nil {
+		pageClicks = []page.PageClickStat{}
+	}
+	writeJSON(w, 200, map[string]any{"users": len(users), "pages": len(pages), "totalClicks": clicks, "pageClicks": pageClicks})
 }
 
 func (s *Server) adminPatchPage(w http.ResponseWriter, r *http.Request) {

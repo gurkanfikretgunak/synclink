@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.15] - 2026-08-24
+
+### Added
+- Admin stats per-page clicks: GET /api/v1/admin/stats now includes `pageClicks: [{id, slug, clicks}]` (pages with zero taps stay in the list at 0). `totalClicks` is unchanged.
+
 ## [0.10.14] - 2026-08-24
 
 ### Added

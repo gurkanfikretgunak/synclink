@@ -167,6 +167,12 @@ type MyStats struct {
 	Links       []MyStatsLink `json:"links"`
 }
 
+type PageClickStat struct {
+	ID     uuid.UUID `json:"id"`
+	Slug   string    `json:"slug"`
+	Clicks int       `json:"clicks"`
+}
+
 type UpsertPageInput struct {
 	Slug         string   `json:"slug"`
 	DisplayName  string   `json:"displayName"`

@@ -201,6 +201,19 @@ func (m *MemoryStore) SumClicks(ctx context.Context) (int, error) {
 	return n, nil
 }
 
+func (m *MemoryStore) ClicksByPage(ctx context.Context) (map[uuid.UUID]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make(map[uuid.UUID]int, len(m.pages))
+	for _, p := range m.pages {
+		out[p.ID] = 0
+	}
+	for _, l := range m.links {
+		out[l.PageID] += l.Clicks
+	}
+	return out, nil
+}
+
 func (m *MemoryStore) CreateSubscriber(ctx context.Context, s *Subscriber) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
