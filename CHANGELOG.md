@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.9] - 2026-08-24
+
+### App
+- Public `/{slug}` quiet copyable handle under the display name (copies the full URL). No new API.
+
 ## [0.10.8] - 2026-08-24
 
 ### App

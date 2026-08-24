@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PublicHandle } from "@/components/public-handle";
 import { PublicLinkButton } from "@/components/public-link";
 import { ShareQr } from "@/components/share-qr";
 import { SiteNav } from "@/components/site-nav";
@@ -63,6 +64,7 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
           {page.displayName}
           {page.verified ? <span className={`ml-2 align-middle text-[10px] tracking-[0.16em] ${dark ? "text-white/50" : "text-neutral-400"}`}>VERIFIED</span> : null}
         </h1>
+        <PublicHandle slug={page.slug} dark={dark} />
         {page.bio ? <p className={`mt-2 text-center text-sm leading-6 ${dark ? "text-white/70" : "text-neutral-600"}`}>{page.bio}</p> : null}
         {page.publishedAt ? <p className={`mt-1 text-[10px] tracking-[0.16em] ${dark ? "text-white/40" : "text-neutral-400"}`}>SINCE {new Date(page.publishedAt).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })}</p> : null}
         <SocialRow socials={page.socials} dark={dark} />
