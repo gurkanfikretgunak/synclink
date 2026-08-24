@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.10.13] - 2026-08-24
+
+### App
+- Studio and subscribe bind API `fields` under the inputs (`slug`, `theme`, `title`, `email`). `ApiRequestError` carries `status` + `fields`; `apiFields(err)` reads them. 429 copy is the API message or `too many clicks`. Locked 401 and path-aware 422 unchanged. Consumes API 0.10.13/0.10.14.
+
 ## [0.10.14] - 2026-08-24
 
 ### Added
