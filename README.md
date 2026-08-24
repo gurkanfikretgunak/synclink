@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.14: admin overview clicks-by-page table from GET /api/v1/admin/stats pageClicks (missing/null treated as []). Consumes API 0.10.15.
+
 0.10.13: studio/subscribe show 422 field errors under slug/theme/title/email; 429 click copy. Consumes API 0.10.13/0.10.14.
 
 0.10.12: path-aware 422 copy on studio page/link saves (and subscribe/auth). No new API.
