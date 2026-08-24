@@ -227,22 +227,25 @@ function isNotFound(data: ApiError, status: number): boolean {
   return text.includes("not found");
 }
 
-function formatApiError(data: ApiError, status: number, statusText: string): string {
-  const message = (data.message || "").trim();
-  const error = (data.error || "").trim();
+function humanApiError(data: ApiError, status: number, statusText: string): string {
+  const message = typeof data.message === "string" ? data.message.trim() : "";
+  const error = typeof data.error === "string" ? data.error.trim() : "";
+
+  if (status === 404) {
+    return message || error || statusText;
+  }
+
+  if (status === 401) {
+    const generic = !message || /^unauthori[sz]ed$/i.test(message);
+    return generic ? "invalid credentials" : message;
+  }
+
   const genericValidation =
     message.toLowerCase() === "validation" || error === "Unprocessable Entity";
-  if (status === 401) {
-    if (error.toLowerCase() === "locked" || message.toLowerCase() === "locked") {
-      return message && message.toLowerCase() !== "validation" ? message : "locked";
-    }
-    if (message && message.toLowerCase() !== "validation") return message;
-    return "invalid credentials";
-  }
-  if (status === 422 || genericValidation) {
-    if (message && message.toLowerCase() !== "validation") return message;
+  if (genericValidation && (!message || message.toLowerCase() === "validation")) {
     return "Check email, password (8+), slug, or URL.";
   }
+
   return message || error || statusText;
 }
 
@@ -274,7 +277,7 @@ async function request<T>(
     if (init.allow404 && isNotFound(data, res.status)) {
       return null as T;
     }
-    throw new Error(formatApiError(data, res.status, res.statusText));
+    throw new Error(humanApiError(data, res.status, res.statusText));
   }
   return data;
 }
