@@ -88,7 +88,12 @@ func writeErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, page.ErrConflict), errors.Is(err, auth.ErrExists):
 		writeJSON(w, 409, map[string]any{"error": "Conflict", "message": err.Error(), "code": 409})
 	case errors.Is(err, page.ErrValidation):
-		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
+		body := map[string]any{"error": "Unprocessable Entity", "message": "validation", "code": 422}
+		var fe *page.FieldError
+		if errors.As(err, &fe) && len(fe.Fields) > 0 {
+			body["fields"] = fe.Fields
+		}
+		writeJSON(w, 422, body)
 	case errors.Is(err, auth.ErrWeakPassword):
 		writeJSON(w, 422, map[string]any{"error": "Unprocessable Entity", "message": err.Error(), "code": 422})
 	case errors.Is(err, auth.ErrValidation):

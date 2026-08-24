@@ -24,7 +24,7 @@ func NewService(store Store) *Service {
 func normalizeSlug(slug string) (string, error) {
 	s := strings.ToLower(strings.TrimSpace(slug))
 	if !slugRE.MatchString(s) {
-		return "", ErrValidation
+		return "", Invalid("slug", "invalid slug")
 	}
 	return s, nil
 }
@@ -117,14 +117,14 @@ func (s *Service) GetMyPage(ctx context.Context, userID uuid.UUID) (*PageDTO, er
 func (s *Service) UpsertPage(ctx context.Context, userID uuid.UUID, in UpsertPageInput) (*PageDTO, error) {
 	slug, err := normalizeSlug(in.Slug)
 	if err != nil {
-		return nil, ErrValidation
+		return nil, err
 	}
 	theme := strings.TrimSpace(in.Theme)
 	if theme == "" {
 		theme = ThemeDefault
 	}
 	if !ValidTheme(theme) {
-		return nil, ErrValidation
+		return nil, Invalid("theme", "invalid theme")
 	}
 	shape, accent, bg, motion := NormalizeLook(strings.TrimSpace(in.AvatarShape), strings.TrimSpace(in.AccentColor), strings.TrimSpace(in.Background), strings.TrimSpace(in.Motion))
 	socials := NormalizeSocials(in.Socials)
@@ -247,7 +247,7 @@ func (s *Service) CreateLink(ctx context.Context, userID uuid.UUID, in CreateLin
 		return nil, err
 	}
 	if strings.TrimSpace(in.Title) == "" || strings.TrimSpace(in.URL) == "" {
-		return nil, ErrValidation
+		return nil, Invalid("title", "required")
 	}
 	max, err := s.store.MaxOrder(ctx, p.ID)
 	if err != nil {
@@ -413,11 +413,11 @@ func (s *Service) SumClicks(ctx context.Context) (int, error) {
 func normalizeSubscribeEmail(raw string) (string, error) {
 	email := strings.ToLower(strings.TrimSpace(raw))
 	if email == "" || strings.ContainsAny(email, " \t\n\r") {
-		return "", ErrValidation
+		return "", Invalid("email", "invalid email")
 	}
 	addr, err := mail.ParseAddress(email)
 	if err != nil || addr.Address == "" || !strings.Contains(addr.Address, ".") {
-		return "", ErrValidation
+		return "", Invalid("email", "invalid email")
 	}
 	return strings.ToLower(addr.Address), nil
 }
