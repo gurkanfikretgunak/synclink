@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.10: homepage type-first hero + device frame; feature strip instead of station cards. No new API.
+
 0.10.9: public /{slug} quiet copyable handle under the name. No new API.
 
 0.10.8: /sitemap.xml and /robots.txt (public / /about /{demoSlug}; disallow dashboard/admin/reset). No new API.

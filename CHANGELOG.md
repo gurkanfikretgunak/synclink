@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.10] - 2026-08-24
+
+### App
+- Marketing home: type-first hero, device frame around `heroImage` (monogram if empty), primary + ghost CTAs, `/{demo}` handle chip, type-only feature strip. Dropped Station 01 and the three-card grid. No new API.
+
 ## [0.10.9] - 2026-08-24
 
 ### App
