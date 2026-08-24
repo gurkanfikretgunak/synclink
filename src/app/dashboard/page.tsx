@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SiteNav } from "@/components/site-nav";
 import { ShareQr } from "@/components/share-qr";
 import { SocialRow } from "@/components/social-row";
-import { SOCIAL_NETWORKS, getToken, setToken, synclink, type LinkItem, type Page, type Subscriber } from "@/lib/api";
+import { SOCIAL_NETWORKS, apiFields, getToken, setToken, synclink, type LinkItem, type Page, type Subscriber } from "@/lib/api";
 
 type Gate = "login" | "register" | "forgot" | "reset";
 type Panel = "identity" | "look" | "socials" | "links" | "inbox" | "account";
@@ -75,6 +75,7 @@ export default function DashboardPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetToken, setResetToken] = useState("");
   const [error, setError] = useState("");
+  const [fields, setFields] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
   const [page, setPage] = useState<Page>(emptyPage);
@@ -89,6 +90,7 @@ export default function DashboardPage() {
 
   async function boot(next: string, fallbackEmail = "") {
     setError("");
+    setFields({});
     const [mine, items, stats, inbox] = await Promise.all([
       synclink.getMyPage(next),
       synclink.listLinks(next),
@@ -132,6 +134,7 @@ export default function DashboardPage() {
   async function onAuth(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setFields({});
     setNotice("");
     try {
       const res = gate === "register" ? await synclink.register(email, password) : await synclink.login(email, password);
@@ -140,12 +143,14 @@ export default function DashboardPage() {
       await boot(res.token, res.user.email || email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not sign in");
+      setFields(apiFields(err));
     }
   }
 
   async function onForgot(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setFields({});
     try {
       const res = await synclink.forgotPassword(email);
       setResetToken(res.resetToken || "");
@@ -159,6 +164,7 @@ export default function DashboardPage() {
   async function onReset(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setFields({});
     try {
       await synclink.resetPassword(email, resetToken, newPassword);
       setNotice("Password reset. Sign in.");
@@ -179,6 +185,7 @@ export default function DashboardPage() {
     }
     setSaving(true);
     setError("");
+    setFields({});
     try {
       const next = await synclink.upsertPage(token, {
         slug: page.slug.trim(),
@@ -200,6 +207,7 @@ export default function DashboardPage() {
       return next;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save page");
+      setFields(apiFields(err));
       return null;
     } finally {
       setSaving(false);
@@ -215,6 +223,7 @@ export default function DashboardPage() {
     event.preventDefault();
     if (!token) return;
     setError("");
+    setFields({});
     try {
       let live = page;
       if (!live.id) {
@@ -228,6 +237,7 @@ export default function DashboardPage() {
       setLinkUrl("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add link");
+      setFields(apiFields(err));
     }
   }
 
@@ -238,6 +248,7 @@ export default function DashboardPage() {
       setLinks((current) => current.map((item) => (item.id === next.id ? next : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update link");
+      setFields(apiFields(err));
     }
   }
 
@@ -259,6 +270,7 @@ export default function DashboardPage() {
     event.preventDefault();
     if (!token) return;
     setError("");
+    setFields({});
     try {
       await synclink.changePassword(token, currentPassword, newPassword);
       setNotice("Password updated.");
@@ -298,7 +310,7 @@ export default function DashboardPage() {
             <CardContent>
               {gate === "forgot" ? (
                 <form className="space-y-4" onSubmit={onForgot}>
-                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />{fields.email ? <p className="text-xs text-red-600">{fields.email}</p> : null}</div>
                   {error ? <p className="text-sm text-red-600">{error}</p> : null}
                   {notice ? <p className="text-sm text-neutral-600">{notice}</p> : null}
                   <Button type="submit">Send reset</Button>
@@ -306,7 +318,7 @@ export default function DashboardPage() {
                 </form>
               ) : gate === "reset" ? (
                 <form className="space-y-4" onSubmit={onReset}>
-                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />{fields.email ? <p className="text-xs text-red-600">{fields.email}</p> : null}</div>
                   <div className="space-y-2"><Label htmlFor="resetToken">Token</Label><Input id="resetToken" value={resetToken} onChange={(e) => setResetToken(e.target.value)} required /></div>
                   <div className="space-y-2"><Label htmlFor="newPassword">New password</Label><Input id="newPassword" type="password" minLength={8} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required /></div>
                   {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -314,7 +326,7 @@ export default function DashboardPage() {
                 </form>
               ) : (
                 <form className="space-y-4" onSubmit={onAuth}>
-                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                  <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />{fields.email ? <p className="text-xs text-red-600">{fields.email}</p> : null}</div>
                   <div className="space-y-2"><Label htmlFor="password">Password</Label><Input id="password" type="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
                   {error ? <p className="text-sm text-red-600">{error}</p> : null}
                   <Button type="submit">{gate === "register" ? "Create account" : "Continue"}</Button>
@@ -362,7 +374,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={onSavePage}>
-                <div className="space-y-2"><Label htmlFor="slug">Slug</Label><Input id="slug" value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value })} required /></div>
+                <div className="space-y-2"><Label htmlFor="slug">Slug</Label><Input id="slug" value={page.slug} onChange={(e) => setPage({ ...page, slug: e.target.value })} required />{fields.slug ? <p className="text-xs text-red-600">{fields.slug}</p> : null}</div>
                 <div className="space-y-2"><Label htmlFor="displayName">Display name</Label><Input id="displayName" value={page.displayName} onChange={(e) => setPage({ ...page, displayName: e.target.value })} required /></div>
                 <div className="space-y-2"><Label htmlFor="bio">Bio</Label><Textarea id="bio" value={page.bio} onChange={(e) => setPage({ ...page, bio: e.target.value })} /></div>
                 <div className="space-y-2"><Label htmlFor="avatarUrl">Avatar URL</Label><Input id="avatarUrl" value={page.avatarUrl || ""} onChange={(e) => setPage({ ...page, avatarUrl: e.target.value || null })} /></div>
@@ -438,6 +450,7 @@ export default function DashboardPage() {
                       <Button key={preset.name} type="button" variant={page.background === preset.background ? "default" : "outline"} onClick={() => setPage({ ...page, ...preset })}>{preset.name}</Button>
                     ))}
                   </div>
+                  {fields.theme ? <p className="text-xs text-red-600">{fields.theme}</p> : null}
                 </div>
                 <div className="space-y-2">
                   <Label>Avatar shape</Label>
@@ -478,7 +491,10 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto]" onSubmit={addLink}>
-                <Input placeholder="Title" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} required />
+                <div className="space-y-1">
+                  <Input placeholder="Title" value={linkTitle} onChange={(e) => setLinkTitle(e.target.value)} required />
+                  {fields.title ? <p className="text-xs text-red-600">{fields.title}</p> : null}
+                </div>
                 <Input placeholder="https://" type="url" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} required />
                 <Button type="submit">Add</Button>
               </form>
