@@ -219,6 +219,7 @@ type ApiError = {
   error?: string;
   message?: string;
   code?: number;
+  fields?: Record<string, string>;
 };
 
 function isNotFound(data: ApiError, status: number): boolean {
@@ -227,9 +228,27 @@ function isNotFound(data: ApiError, status: number): boolean {
   return text.includes("not found");
 }
 
-function humanApiError(data: ApiError, status: number, statusText: string): string {
+function validationHint(path: string): string {
+  if (path.includes("/subscribe")) return "Check the email address.";
+  if (path.includes("/links")) return "Check title and URL (http/https). Embed must be a URL.";
+  if (path.includes("/me/page")) return "Check slug, theme, cover URL, or page password.";
+  if (path.includes("/auth") || path.includes("/password")) return "Check email or password (8+).";
+  if (path.includes("/admin/settings")) return "Check settings URLs and email.";
+  return "Check the fields on this form.";
+}
+
+function fieldSummary(fields?: Record<string, string>): string {
+  if (!fields) return "";
+  const parts = Object.entries(fields)
+    .filter(([, value]) => typeof value === "string" && value.trim())
+    .map(([key, value]) => `${key}: ${value.trim()}`);
+  return parts.join(" · ");
+}
+
+function humanApiError(data: ApiError, status: number, statusText: string, path: string): string {
   const message = typeof data.message === "string" ? data.message.trim() : "";
   const error = typeof data.error === "string" ? data.error.trim() : "";
+  const fromFields = fieldSummary(data.fields);
 
   if (status === 404) {
     return message || error || statusText;
@@ -246,7 +265,11 @@ function humanApiError(data: ApiError, status: number, statusText: string): stri
   const genericValidation =
     message.toLowerCase() === "validation" || error === "Unprocessable Entity";
   if (genericValidation && (!message || message.toLowerCase() === "validation")) {
-    return "Check email, password (8+), slug, or URL.";
+    return fromFields || validationHint(path);
+  }
+
+  if (fromFields && (!message || message.toLowerCase() === "validation")) {
+    return fromFields;
   }
 
   return message || error || statusText;
@@ -280,7 +303,7 @@ async function request<T>(
     if (init.allow404 && isNotFound(data, res.status)) {
       return null as T;
     }
-    throw new Error(humanApiError(data, res.status, res.statusText));
+    throw new Error(humanApiError(data, res.status, res.statusText, path));
   }
   return data;
 }
