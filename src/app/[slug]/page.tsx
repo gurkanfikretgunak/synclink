@@ -40,10 +40,12 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
     return {
       title,
       description,
+      applicationName: title,
       ...(themeColor ? { themeColor } : {}),
       ...(icon ? { icons: { icon, apple: icon } } : {}),
+      appleWebApp: { capable: true, title, statusBarStyle: "default" },
       alternates: { canonical: `/${slug}` },
-      openGraph: { title, description, type: "profile", images },
+      openGraph: { title, description, type: "profile", images, url: `/${slug}` },
       twitter: { card: "summary", title, description, images: image ? [image] : undefined },
     };
   } catch (err) {

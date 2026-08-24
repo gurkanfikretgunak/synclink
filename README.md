@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.7: public /{slug} og:url matches canonical; apple-mobile-web-app-title from displayName. No new API.
+
 0.10.6: public /{slug} theme-color from accent, tab/apple icon from avatar, canonical. No new API.
 
 0.10.5: public + studio Add to contacts (.vcf). No new API.

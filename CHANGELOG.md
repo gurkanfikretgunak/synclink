@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.7] - 2026-08-24
+
+### App
+- Public `/{slug}` generateMetadata: `openGraph.url` matches canonical `/{slug}`; `appleWebApp` (capable, title from displayName, default status bar) and `applicationName` for Add to Home Screen. Locked pages stay noindex. No new API.
+
 ## [0.10.6] - 2026-08-24
 
 ### App
