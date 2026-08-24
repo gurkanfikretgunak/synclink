@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.17: studio “Where from” list from `me/stats.referrers`. Consumes API 0.10.17.
+
 0.10.16: studio 14-day click bars from `me/stats.daily`. Consumes API 0.10.16.
 
 0.10.14: admin overview clicks-by-page table from `pageClicks`. Consumes API 0.10.15.
@@ -43,7 +45,7 @@ Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/adm
 
 0.10.12: path-aware 422 copy on studio page/link saves (and subscribe/auth). No new API.
 
-0.10.11: client maps 401/422 so login and save no longer show a bare "validation". No new API.
+0.10.11: client maps 401/422 so login and save no longer show a bare “validation”. No new API.
 
 0.10.10: homepage type-first hero + device frame; feature strip instead of station cards. No new API.
 
