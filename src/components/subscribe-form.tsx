@@ -3,13 +3,14 @@
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { synclink } from "@/lib/api";
+import { ApiRequestError, synclink } from "@/lib/api";
 
 export function SubscribeForm({ slug, dark = false }: { slug: string; dark?: boolean }) {
   const [email, setEmail] = useState("");
   const [hidden, setHidden] = useState(false);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [emailField, setEmailField] = useState("");
   const [busy, setBusy] = useState(false);
 
   if (hidden) return null;
@@ -18,6 +19,7 @@ export function SubscribeForm({ slug, dark = false }: { slug: string; dark?: boo
     event.preventDefault();
     setBusy(true);
     setError("");
+    setEmailField("");
     setNotice("");
     try {
       await synclink.subscribe(slug, email.trim());
@@ -30,6 +32,9 @@ export function SubscribeForm({ slug, dark = false }: { slug: string; dark?: boo
         return;
       }
       setError(message);
+      if (err instanceof ApiRequestError && err.fields.email) {
+        setEmailField(err.fields.email);
+      }
     } finally {
       setBusy(false);
     }
@@ -49,6 +54,7 @@ export function SubscribeForm({ slug, dark = false }: { slug: string; dark?: boo
         />
         <Button type="submit" disabled={busy}>{busy ? "…" : "Join"}</Button>
       </div>
+      {emailField ? <p className="text-xs text-red-500">{emailField}</p> : null}
       {notice ? <p className="text-xs opacity-70">{notice}</p> : null}
       {error ? <p className="text-xs text-red-500">{error}</p> : null}
     </form>

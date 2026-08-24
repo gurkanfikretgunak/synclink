@@ -33,7 +33,7 @@ export function PublicLinkButton({
     void synclink.recordClick(slug, link.id).then((res) => {
       if (typeof res.clicks === "number") setClicks(res.clicks);
       setLast(shortWhen(new Date().toISOString()));
-    });
+    }).catch(() => {});
   }
 
   return (
