@@ -1,6 +1,6 @@
 {
   "name": "synclink",
-  "version": "0.10.14",
+  "version": "0.10.16",
   "private": true,
   "scripts": {
     "dev": "next dev",
