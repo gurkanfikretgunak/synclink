@@ -3,6 +3,11 @@
 All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
+## [0.10.4] - 2026-08-24
+
+### App
+- Public `/{slug}` emits schema.org ProfilePage JSON-LD (Person name/bio/image, sameAs from socials). No new API.
+
 ## [0.10.3] - 2026-08-24
 
 ### App

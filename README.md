@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.4: public /{slug} ProfilePage JSON-LD (Person + sameAs). No new API.
+
 0.10.3: public + studio native share sheet (copy fallback). No new API.
 
 0.10.2: public /{slug} title + share card from displayName/bio/avatar. No new API.
