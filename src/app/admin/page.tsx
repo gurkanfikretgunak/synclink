@@ -101,11 +101,6 @@ export default function AdminPage() {
     setUsers((list) => list.filter((item) => item.id !== id));
   }
 
-  const pageClicks = [...(stats?.pageClicks ?? [])].sort((a, b) => {
-    if (b.clicks !== a.clicks) return b.clicks - a.clicks;
-    return a.slug.localeCompare(b.slug);
-  });
-
   if (!token) {
     return (
       <main className="min-h-full bg-[#faf9f7]">
@@ -152,7 +147,7 @@ export default function AdminPage() {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         {tab === "overview" ? (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <Card className="border-neutral-200/80 bg-white shadow-none">
                 <CardHeader>
@@ -179,13 +174,13 @@ export default function AdminPage() {
             <Card className="border-neutral-200/80 bg-white shadow-none">
               <CardHeader>
                 <CardTitle className="font-medium">Clicks by page</CardTitle>
-                <CardDescription>Public taps on each page</CardDescription>
+                <CardDescription>Public pages, zeros included</CardDescription>
               </CardHeader>
               <CardContent>
-                {pageClicks.length === 0 ? (
-                  <p className="text-xs text-neutral-500">No pages yet.</p>
+                {(stats?.pageClicks ?? []).length === 0 ? (
+                  <p className="text-sm text-neutral-600">No pages yet.</p>
                 ) : (
-                  <Table className="text-xs">
+                  <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Slug</TableHead>
@@ -193,14 +188,16 @@ export default function AdminPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {pageClicks.map((row) => (
-                        <TableRow key={row.id || row.slug}>
-                          <TableCell>
-                            <Link href={`/${row.slug}`}>/{row.slug}</Link>
-                          </TableCell>
-                          <TableCell className="text-right">{row.clicks}</TableCell>
-                        </TableRow>
-                      ))}
+                      {[...(stats?.pageClicks ?? [])]
+                        .sort((a, b) => b.clicks - a.clicks || a.slug.localeCompare(b.slug))
+                        .map((row) => (
+                          <TableRow key={row.id}>
+                            <TableCell>
+                              <Link href={`/${row.slug}`} className="underline">/{row.slug}</Link>
+                            </TableCell>
+                            <TableCell className="text-right">{row.clicks}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 )}
