@@ -351,13 +351,18 @@ func (s *SQLiteStore) Reorder(ctx context.Context, pageID uuid.UUID, ids []uuid.
 }
 
 func (s *SQLiteStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
 	var n int
-	now := time.Now().UTC().Format(time.RFC3339Nano)
-	err := s.db.QueryRowContext(ctx, `
+	now := time.Now().UTC()
+	err = tx.QueryRowContext(ctx, `
 		UPDATE links SET clicks = clicks + 1, last_clicked_at = ?, updated_at = ?
 		WHERE id=? AND page_id=? AND active=1
 		RETURNING clicks`,
-		now, now, linkID.String(), pageID.String(),
+		now.Format(time.RFC3339Nano), now.Format(time.RFC3339Nano), linkID.String(), pageID.String(),
 	).Scan(&n)
 	if errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrNotFound
@@ -365,7 +370,40 @@ func (s *SQLiteStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.U
 	if err != nil {
 		return 0, err
 	}
+	_, err = tx.ExecContext(ctx, `
+		INSERT INTO click_days (page_id, day, clicks) VALUES (?, ?, 1)
+		ON CONFLICT(page_id, day) DO UPDATE SET clicks = clicks + 1`,
+		pageID.String(), now.Format("2006-01-02"),
+	)
+	if err != nil {
+		return 0, err
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
 	return n, nil
+}
+
+func (s *SQLiteStore) DailyClicks(ctx context.Context, pageID uuid.UUID) (map[string]int, error) {
+	since := time.Now().UTC().AddDate(0, 0, -13).Format("2006-01-02")
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT day, clicks FROM click_days WHERE page_id=? AND day>=?`,
+		pageID.String(), since,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := map[string]int{}
+	for rows.Next() {
+		var day string
+		var n int
+		if err := rows.Scan(&day, &n); err != nil {
+			return nil, err
+		}
+		out[day] = n
+	}
+	return out, rows.Err()
 }
 
 func (s *SQLiteStore) SumClicks(ctx context.Context) (int, error) {

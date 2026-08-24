@@ -162,9 +162,15 @@ type MyStatsLink struct {
 	URL    string    `json:"url"`
 }
 
+type DailyClick struct {
+	Date   string `json:"date"`
+	Clicks int    `json:"clicks"`
+}
+
 type MyStats struct {
 	TotalClicks int           `json:"totalClicks"`
 	Links       []MyStatsLink `json:"links"`
+	Daily       []DailyClick  `json:"daily"`
 }
 
 type PageClickStat struct {

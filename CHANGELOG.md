@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.16] - 2026-08-24
+
+### Added
+- Owner stats daily series: GET /api/v1/me/stats now includes `daily: [{date, clicks}]` for the last 14 UTC days (zeros included). Today’s tap bumps that day. `totalClicks` and `links` are unchanged.
+
 ## [0.10.15] - 2026-08-24
 
 ### Added

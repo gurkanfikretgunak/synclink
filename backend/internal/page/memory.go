@@ -15,6 +15,7 @@ type MemoryStore struct {
 	bySlug      map[string]uuid.UUID
 	links       map[uuid.UUID]*Link
 	subscribers map[uuid.UUID]*Subscriber
+	days        map[uuid.UUID]map[string]int
 }
 
 func NewMemoryStore() *MemoryStore {
@@ -24,6 +25,7 @@ func NewMemoryStore() *MemoryStore {
 		bySlug:      map[string]uuid.UUID{},
 		links:       map[uuid.UUID]*Link{},
 		subscribers: map[uuid.UUID]*Subscriber{},
+		days:        map[uuid.UUID]map[string]int{},
 	}
 }
 
@@ -188,7 +190,23 @@ func (m *MemoryStore) IncrementClicks(ctx context.Context, pageID, linkID uuid.U
 	l.Clicks++
 	l.LastClickedAt = &now
 	l.UpdatedAt = now
+	day := now.Format("2006-01-02")
+	if m.days[pageID] == nil {
+		m.days[pageID] = map[string]int{}
+	}
+	m.days[pageID][day]++
 	return l.Clicks, nil
+}
+
+func (m *MemoryStore) DailyClicks(ctx context.Context, pageID uuid.UUID) (map[string]int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	src := m.days[pageID]
+	out := map[string]int{}
+	for k, v := range src {
+		out[k] = v
+	}
+	return out, nil
 }
 
 func (m *MemoryStore) SumClicks(ctx context.Context) (int, error) {

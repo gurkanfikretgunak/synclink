@@ -26,6 +26,7 @@ type LinkStore interface {
 	IncrementClicks(ctx context.Context, pageID, linkID uuid.UUID) (int, error)
 	SumClicks(ctx context.Context) (int, error)
 	ClicksByPage(ctx context.Context) (map[uuid.UUID]int, error)
+	DailyClicks(ctx context.Context, pageID uuid.UUID) (map[string]int, error)
 }
 
 type SubscriberStore interface {

@@ -60,6 +60,9 @@ func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
 	if empty.TotalClicks != 0 || empty.Links == nil || len(empty.Links) != 0 {
 		t.Fatalf("empty %#v", empty)
 	}
+	if len(empty.Daily) != 14 {
+		t.Fatalf("empty daily %#v", empty.Daily)
+	}
 	if _, err := svc.UpsertPage(ctx, u, UpsertPageInput{Slug: "gurkan", DisplayName: "G"}); err != nil {
 		t.Fatal(err)
 	}
@@ -77,6 +80,9 @@ func TestSQLiteMyStatsAndSumClicks(t *testing.T) {
 	stats, err := svc.MyStats(ctx, u)
 	if err != nil || stats.TotalClicks != 1 || len(stats.Links) != 1 || stats.Links[0].Clicks != 1 {
 		t.Fatalf("sqlite mystats %#v err=%v", stats, err)
+	}
+	if len(stats.Daily) != 14 || stats.Daily[13].Clicks != 1 {
+		t.Fatalf("sqlite daily %#v", stats.Daily)
 	}
 	total, err := svc.SumClicks(ctx)
 	if err != nil || total != 1 {

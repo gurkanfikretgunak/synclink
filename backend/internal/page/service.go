@@ -393,16 +393,41 @@ func (s *Service) RecordClick(ctx context.Context, slug string, linkID uuid.UUID
 	return s.store.IncrementClicks(ctx, p.ID, linkID)
 }
 
+func padDaily(counts map[string]int) []DailyClick {
+	if counts == nil {
+		counts = map[string]int{}
+	}
+	now := time.Now().UTC()
+	out := make([]DailyClick, 0, 14)
+	for i := 13; i >= 0; i-- {
+		d := now.AddDate(0, 0, -i).Format("2006-01-02")
+		out = append(out, DailyClick{Date: d, Clicks: counts[d]})
+	}
+	return out
+}
+
 func (s *Service) MyStats(ctx context.Context, userID uuid.UUID) (*MyStats, error) {
 	links, err := s.ListLinks(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
-	out := &MyStats{TotalClicks: 0, Links: make([]MyStatsLink, 0, len(links))}
+	out := &MyStats{TotalClicks: 0, Links: make([]MyStatsLink, 0, len(links)), Daily: padDaily(nil)}
 	for _, l := range links {
 		out.TotalClicks += l.Clicks
 		out.Links = append(out.Links, MyStatsLink{ID: l.ID, Title: l.Title, Clicks: l.Clicks, URL: l.URL})
 	}
+	p, err := s.store.GetPageByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return out, nil
+		}
+		return nil, err
+	}
+	counts, err := s.store.DailyClicks(ctx, p.ID)
+	if err != nil {
+		return nil, err
+	}
+	out.Daily = padDaily(counts)
 	return out, nil
 }
 

@@ -42,6 +42,14 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	if empty.TotalClicks != 0 || empty.Links == nil || len(empty.Links) != 0 {
 		t.Fatalf("empty json %#v body=%s", empty, emptyW.Body.String())
 	}
+	if len(empty.Daily) != 14 {
+		t.Fatalf("empty daily len=%d body=%s", len(empty.Daily), emptyW.Body.String())
+	}
+	for _, d := range empty.Daily {
+		if d.Date == "" || d.Clicks != 0 {
+			t.Fatalf("empty daily row %#v", d)
+		}
+	}
 
 	noAuth := httptest.NewRecorder()
 	h.ServeHTTP(noAuth, httptest.NewRequest(http.MethodGet, "/api/v1/me/stats", nil))
@@ -91,6 +99,19 @@ func TestMeStatsAndAdminClicks(t *testing.T) {
 	}
 	if me.TotalClicks != 1 || len(me.Links) != 1 || me.Links[0].Clicks != 1 || me.Links[0].Title != "Site" || me.Links[0].URL != "https://example.com" {
 		t.Fatalf("me stats %#v body=%s", me, meW.Body.String())
+	}
+	if len(me.Daily) != 14 {
+		t.Fatalf("daily len=%d body=%s", len(me.Daily), meW.Body.String())
+	}
+	if me.Daily[13].Clicks != 1 || me.Daily[13].Date == "" {
+		t.Fatalf("today daily %#v body=%s", me.Daily[13], meW.Body.String())
+	}
+	sum := 0
+	for _, d := range me.Daily {
+		sum += d.Clicks
+	}
+	if sum != 1 {
+		t.Fatalf("daily sum=%d %#v", sum, me.Daily)
 	}
 
 	adminReq := httptest.NewRequest(http.MethodGet, "/api/v1/admin/stats", nil)
