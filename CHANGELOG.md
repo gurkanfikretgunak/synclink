@@ -6,6 +6,9 @@ All notable changes to SyncLink live in this file.
 
 ## [0.10.16] - 2026-08-24
 
+### App
+- Studio header 14-day click bars from GET /api/v1/me/stats `daily` (Linktree-style). Missing/`null` hides the bars. App 0.10.16.
+
 ### Added
 - Owner stats daily series: GET /api/v1/me/stats now includes `daily: [{date, clicks}]` for the last 14 UTC days (zeros included). Today’s tap bumps that day. `totalClicks` and `links` are unchanged.
 
@@ -153,7 +156,7 @@ All notable changes to SyncLink live in this file.
 - Admin overview has a Clicks card from GET /api/v1/admin/stats `totalClicks`.
 - GET /api/v1/me/stats (JWT): 200 `{"totalClicks":N,"links":[{"id":"uuid","title":"...","clicks":N,"url":"..."}]}`. No page or empty links: `{"totalClicks":0,"links":[]}`.
 - GET /api/v1/admin/stats now includes click sum as `totalClicks`: `{"users":N,"pages":N,"totalClicks":N}`.
-- Memory and SQLite `SumClicks`; page service `MyStats` aggregates the caller's links.
+- Memory and SQLite `SumClicks`; page service `MyStats` aggregates the caller’s links.
 
 
 ## [0.7.0] - 2026-08-22
