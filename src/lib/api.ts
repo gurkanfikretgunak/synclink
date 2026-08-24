@@ -236,7 +236,10 @@ function humanApiError(data: ApiError, status: number, statusText: string): stri
   }
 
   if (status === 401) {
-    const generic = !message || /^unauthori[sz]ed$/i.test(message);
+    if (error.toLowerCase() === "locked" || message.toLowerCase() === "locked") {
+      return "locked";
+    }
+    const generic = !message || /^unauthori[sz]ed$/i.test(message) || message.toLowerCase() === "validation";
     return generic ? "invalid credentials" : message;
   }
 
