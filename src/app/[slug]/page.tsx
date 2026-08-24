@@ -33,9 +33,16 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
     const description = page.bio.trim() || undefined;
     const image = page.avatarUrl || page.coverUrl || undefined;
     const images = image ? [{ url: image }] : undefined;
+    const icon = [page.avatarUrl, page.coverUrl]
+      .map((url) => (typeof url === "string" ? url.trim() : ""))
+      .find((url) => url.startsWith("https://") || url.startsWith("http://"));
+    const themeColor = page.accentColor?.trim() || undefined;
     return {
       title,
       description,
+      ...(themeColor ? { themeColor } : {}),
+      ...(icon ? { icons: { icon, apple: icon } } : {}),
+      alternates: { canonical: `/${slug}` },
       openGraph: { title, description, type: "profile", images },
       twitter: { card: "summary", title, description, images: image ? [image] : undefined },
     };
