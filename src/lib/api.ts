@@ -196,9 +196,15 @@ export type PlatformSettings = {
   nav: NavItem[];
 };
 
+export type MeDay = {
+  date: string;
+  clicks: number;
+};
+
 export type MeStats = {
   totalClicks: number;
   links: { id: string; title?: string; clicks: number }[];
+  daily?: MeDay[];
 };
 
 export type AdminPageClick = {
@@ -446,7 +452,7 @@ export const synclink = {
   },
   meStats(token: string) {
     return request<MeStats | null>("/api/v1/me/stats", { token, allow404: true }).then(
-      (data) => data || { totalClicks: 0, links: [] },
+      (data) => data || { totalClicks: 0, links: [], daily: [] },
     );
   },
   adminStats(token: string) {
