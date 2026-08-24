@@ -7,7 +7,7 @@ All notable changes to SyncLink live in this file.
 ## [0.10.11] - 2026-08-24
 
 ### App
-- Client error map: 401 login shows `invalid credentials` (page lock stays `locked`); generic 422 `validation` / Unprocessable Entity becomes "Check email, password (8+), slug, or URL." Specific API messages still win. No new API.
+- Client `request()` maps generic 422 (`message` exactly `validation` or `error` `Unprocessable Entity`) to `Check email, password (8+), slug, or URL.` Specific API messages are kept. Generic/empty 401 becomes `invalid credentials`. 404-safe behavior is unchanged. No new API.
 
 ## [0.10.10] - 2026-08-24
 
