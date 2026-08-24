@@ -4,6 +4,11 @@ All notable changes to SyncLink live in this file.
 
 ## [Unreleased]
 
+## [0.10.8] - 2026-08-24
+
+### App
+- App Router `sitemap.ts` and `robots.ts`: `/sitemap.xml` lists `/`, `/about`, and `/${demoSlug}` from public settings (omits the slug row if settings throw). `/robots.txt` allows `/`, disallows `/dashboard` `/admin` `/reset`, points at sitemap. No new API.
+
 ## [0.10.7] - 2026-08-24
 
 ### App
@@ -125,7 +130,8 @@ All notable changes to SyncLink live in this file.
 ## [0.6.1] - 2026-08-22
 
 ### Added
-- Shared top nav from public settings (`nav: [{label,href}]`) on `/`, `/about`, `/dashboard`, `/admin`, `/reset`. Slim bar on `/{slug}`. Fallback Home / About / Dashboard / Admin until API ships nav.
+- Shared top nav from public settings (`nav: [{label,href}]`) on `/`, `/about`, `/dashboard`, `/admin`, `/reset`. Slim bar on `/{slug}`.
+- Fallback Home / About / Dashboard / Admin until API ships nav.
 - Admin settings can edit those nav links.
 
 ## [0.6.0] - 2026-08-22
