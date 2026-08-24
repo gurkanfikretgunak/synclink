@@ -222,6 +222,23 @@ type ApiError = {
   fields?: Record<string, string>;
 };
 
+export class ApiRequestError extends Error {
+  status: number;
+  fields: Record<string, string>;
+
+  constructor(message: string, status: number, fields: Record<string, string> = {}) {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.fields = fields;
+  }
+}
+
+export function apiFields(err: unknown): Record<string, string> {
+  if (err instanceof ApiRequestError) return err.fields || {};
+  return {};
+}
+
 function isNotFound(data: ApiError, status: number): boolean {
   if (status === 404) return true;
   const text = `${data.error || ""} ${data.message || ""}`.toLowerCase();
@@ -260,6 +277,10 @@ function humanApiError(data: ApiError, status: number, statusText: string, path:
     }
     const generic = !message || /^unauthori[sz]ed$/i.test(message) || message.toLowerCase() === "validation";
     return generic ? "invalid credentials" : message;
+  }
+
+  if (status === 429) {
+    return message || "too many clicks";
   }
 
   const genericValidation =
@@ -303,7 +324,7 @@ async function request<T>(
     if (init.allow404 && isNotFound(data, res.status)) {
       return null as T;
     }
-    throw new Error(humanApiError(data, res.status, res.statusText, path));
+    throw new ApiRequestError(humanApiError(data, res.status, res.statusText, path), res.status, data.fields || {});
   }
   return data;
 }
