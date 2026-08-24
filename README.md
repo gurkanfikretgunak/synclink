@@ -35,6 +35,8 @@ Dashboard studio is 404-safe (empty /me/page is a draft). Homepage hero fields c
 
 Studio and admin show click totals from GET /api/v1/me/stats and GET /api/v1/admin/stats.
 
+0.10.13: studio/subscribe show 422 field errors under slug/theme/title/email; 429 click copy. Consumes API 0.10.13/0.10.14.
+
 0.10.12: path-aware 422 copy on studio page/link saves (and subscribe/auth). No new API.
 
 0.10.11: client maps 401/422 so login and save no longer show a bare "validation". No new API.
