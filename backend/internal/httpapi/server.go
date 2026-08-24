@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -19,17 +20,19 @@ type ctxKey int
 const userKey ctxKey = 1
 
 type Server struct {
-	auth  *auth.Service
-	pages *page.Service
+	auth   *auth.Service
+	pages  *page.Service
+	clicks *clickLimiter
 }
 
 func New(authSvc *auth.Service, pages *page.Service) http.Handler {
-	s := &Server{auth: authSvc, pages: pages}
+	s := &Server{auth: authSvc, pages: pages, clicks: newClickLimiter(60, time.Minute)}
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000", "http://127.0.0.1:3000", "*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Page-Password"},
+		ExposedHeaders:   []string{"Retry-After", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"},
 		AllowCredentials: false,
 	}))
 	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
@@ -41,7 +44,7 @@ func New(authSvc *auth.Service, pages *page.Service) http.Handler {
 		r.Post("/auth/forgot-password", s.forgotPassword)
 		r.Post("/auth/reset-password", s.resetPassword)
 		r.Get("/public/pages/{slug}", s.publicPage)
-		r.Post("/public/pages/{slug}/links/{id}/click", s.publicClick)
+		r.With(s.limitClicks).Post("/public/pages/{slug}/links/{id}/click", s.publicClick)
 		r.Post("/public/pages/{slug}/subscribe", s.publicSubscribe)
 		r.Get("/public/settings", s.publicSettings)
 		r.Group(func(r chi.Router) {
