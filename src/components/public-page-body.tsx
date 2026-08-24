@@ -86,7 +86,7 @@ export function PublicPageBody({ page }: { page: PublicPage }) {
           ))}
         </div>
         <SubscribeForm slug={page.slug} dark={dark} />
-        <ShareQr slug={page.slug} dark={dark} />
+        <ShareQr slug={page.slug} dark={dark} displayName={page.displayName} bio={page.bio} avatarUrl={page.avatarUrl} socials={page.socials} />
       </div>
     </main>
   );
