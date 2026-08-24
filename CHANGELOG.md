@@ -6,6 +6,9 @@ All notable changes to SyncLink live in this file.
 
 ## [0.10.17] - 2026-08-24
 
+### App
+- Studio “Where from” list from GET /api/v1/me/stats `referrers` (host + clicks). Missing/`[]` hides the list. App 0.10.17.
+
 ### Added
 - Owner stats referrers: GET /api/v1/me/stats now includes `referrers: [{host, clicks}]` (host only, www stripped, top 20). Public click reads `Referer`; empty/invalid is skipped and listed as `[]`. `daily` / `totalClicks` / `links` unchanged.
 
