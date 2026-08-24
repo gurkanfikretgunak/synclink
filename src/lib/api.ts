@@ -201,10 +201,16 @@ export type MeDay = {
   clicks: number;
 };
 
+export type MeReferrer = {
+  host: string;
+  clicks: number;
+};
+
 export type MeStats = {
   totalClicks: number;
   links: { id: string; title?: string; clicks: number }[];
   daily?: MeDay[];
+  referrers?: MeReferrer[];
 };
 
 export type AdminPageClick = {
@@ -452,7 +458,7 @@ export const synclink = {
   },
   meStats(token: string) {
     return request<MeStats | null>("/api/v1/me/stats", { token, allow404: true }).then(
-      (data) => data || { totalClicks: 0, links: [], daily: [] },
+      (data) => data || { totalClicks: 0, links: [], daily: [], referrers: [] },
     );
   },
   adminStats(token: string) {
